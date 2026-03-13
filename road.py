@@ -19,11 +19,11 @@ class Road:
         self._check_boundaries()
 
     def _check_boundaries(self) -> None:
-        # Ha az egyik útdarab kiment a képernyőről, visszaugrik
+        # Pontos illeszkedés: a másik útdarab tetejéhez fűzzük hozzá
         if self.y1 >= SCREEN_HEIGHT:
-            self.y1 = -SCREEN_HEIGHT
+            self.y1 = self.y2 - SCREEN_HEIGHT
         if self.y2 >= SCREEN_HEIGHT:
-            self.y2 = -SCREEN_HEIGHT
+            self.y2 = self.y1 - SCREEN_HEIGHT
 
     def draw(self, screen: pygame.Surface) -> None:
         # Az út kirajzolása

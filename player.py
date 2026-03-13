@@ -1,4 +1,5 @@
 import pygame
+from settings import SCREEN_WIDTH
 
 
 class Player(pygame.sprite.Sprite):
@@ -21,11 +22,11 @@ class Player(pygame.sprite.Sprite):
         self._check_boundaries()
 
     def _check_boundaries(self) -> None:
-        # Ne menjen le a képernyőről (a 288 a képernyő szélessége)
+        # A képernyő széléhez igazítjuk, nem fix számhoz
         if self.rect.left < 30:
             self.rect.left = 30
-        if self.rect.right > 288 - 30:
-            self.rect.right = 288 - 30
+        if self.rect.right > SCREEN_WIDTH - 30:
+            self.rect.right = SCREEN_WIDTH - 30
 
     def draw(self, screen: pygame.Surface) -> None:
         # Játékos kirajzolása

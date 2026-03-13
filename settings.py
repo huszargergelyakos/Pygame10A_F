@@ -1,6 +1,6 @@
 # Képernyő beállítások (PC-re lehet, hogy érdemes lesz nagyobbra venni, pl. 400x700)
-SCREEN_WIDTH: int = 288
-SCREEN_HEIGHT: int = 512
+SCREEN_WIDTH: int = 540
+SCREEN_HEIGHT: int = 960
 FPS: int = 60
 
 # Színek (RGB)
