@@ -7,7 +7,8 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         # Kép betöltése és beállítása
         raw_image = pygame.image.load(image_path).convert_alpha()
-        self.image = pygame.transform.scale(raw_image, (90, 100))  # Eredeti méretezés
+        # MEGNÖVELT MÉRET: itt tudod állítani, mekkora legyen az autó!
+        self.image = pygame.transform.scale(raw_image, (140, 240))
 
         # Pozíció és hitbox (rect)
         self.rect = self.image.get_rect()
