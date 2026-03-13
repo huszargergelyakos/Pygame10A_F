@@ -1,6 +1,7 @@
 import sys
 import pygame
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLUE
+from road import Road
 
 
 class Game:
@@ -10,6 +11,10 @@ class Game:
         pygame.display.set_caption("Highway Dodge")
         self.clock = pygame.time.Clock()
         self.running = True
+
+        # Objektumok példányosítása
+        self.speed: int = 5  # Ez lesz a játék alap sebessége
+        self.road = Road("Assets/road.png")  # Út létrehozása
 
     def run(self) -> None:
         # A fő játékciklus, ami futtatja a játékot.
@@ -32,10 +37,11 @@ class Game:
         sys.exit()
 
     def _update(self) -> None:
-        # A játék logikájának frissítése (később töltjük ki).
-        pass
+        # A játék logikájának frissítése.
+        self.road.update(self.speed)  # <--- Út mozgatása
 
     def _draw(self) -> None:
         # Minden kirajzolása a képernyőre.
         self.screen.fill(BLUE)
+        self.road.draw(self.screen)  # <--- Út kirajzolása
         pygame.display.update()
