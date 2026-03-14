@@ -11,7 +11,10 @@ class Game:
         pygame.display.set_caption("Highway Dodge")
         self.clock = pygame.time.Clock()
         self.running = True
-
+        self.bg_image = pygame.image.load("Assets/backgrounds/5.jpg").convert()
+        self.bg_image = pygame.transform.scale(
+            self.bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT)
+        )
         self.speed: int = 5
         self.road = Road("Assets/road.png")
         self.player = Player(SCREEN_HEIGHT - 150, "Assets/cars/1.png")
@@ -41,9 +44,15 @@ class Game:
         self.player.update()  # <--- Ez a sor felel mostantól a sima mozgásért!
 
     def _draw(self) -> None:
-        self.screen.fill(BLUE)
+        # 1. Háttér kirajzolása (ez van legalul)
+        self.screen.blit(self.bg_image, (0, 0))
+
+        # 2. Út kirajzolása (a háttér felett)
         self.road.draw(self.screen)
+
+        # 3. Játékos kirajzolása
         self.player.draw(self.screen)
+
         pygame.display.update()
 
     def _quit_game(self) -> None:
