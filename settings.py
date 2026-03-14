@@ -11,3 +11,5 @@ ROAD_X: int = (SCREEN_WIDTH - ROAD_WIDTH) // 2
 
 # 4 sáv koordinátái az ÚTON BELÜL (hozzáadva az út kezdőpontját)
 LANE_POSITIONS: list[int] = [ROAD_X + 100, ROAD_X + 212, ROAD_X + 325, ROAD_X + 435]
+
+BIOME_DISTANCE: int = 500 # Ennyi megtett egység után váltunk hátteret
