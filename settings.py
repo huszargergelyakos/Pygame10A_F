@@ -1,4 +1,4 @@
-# Képernyő beállítások (PC-re lehet, hogy érdemes lesz nagyobbra venni, pl. 400x700)
+# Képernyő beállítások
 SCREEN_WIDTH: int = 540
 SCREEN_HEIGHT: int = 960
 FPS: int = 60
@@ -10,5 +10,5 @@ YELLOW: tuple[int, int, int] = (255, 255, 0)
 WHITE: tuple[int, int, int] = (255, 255, 255)
 
 # Játék specifikus beállítások
-LANE_POSITIONS: list[int] = [50, 95, 142, 190]
+LANE_POSITIONS: list[int] = [100, 212, 325, 435]
 PLAYER_SPEED: int = 5
