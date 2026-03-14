@@ -1,34 +1,49 @@
 import pygame
-from settings import SCREEN_WIDTH
+from settings import LANE_POSITIONS
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x: int, y: int, image_path: str) -> None:
+    def __init__(self, y: int, image_path: str) -> None:
         super().__init__()
-        # Kép betöltése és beállítása
+        self._load_image(image_path)
+        self.current_lane: int = 1  # Kezdés a 2. sávból (indexek: 0, 1, 2, 3)
+
+        self.rect = self.image.get_rect()
+        self.rect.center = (LANE_POSITIONS[self.current_lane], y)
+
+        # Új változók a finom mozgáshoz
+        self.target_x: int = self.rect.centerx
+        self.slide_speed: int = (
+            20  # Mozgás sebessége (állíthatod, ha gyorsabbat/lassabbat akarsz)
+        )
+
+    def _load_image(self, image_path: str) -> None:
         raw_image = pygame.image.load(image_path).convert_alpha()
-        # MEGNÖVELT MÉRET: itt tudod állítani, mekkora legyen az autó!
         self.image = pygame.transform.scale(raw_image, (140, 240))
 
-        # Pozíció és hitbox (rect)
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
+    def move_left(self) -> None:
+        # Csak a cél X koordinátát frissítjük, nem az autót teleportáljuk
+        if self.current_lane > 0:
+            self.current_lane -= 1
+            self.target_x = LANE_POSITIONS[self.current_lane]
 
-    def update(self, move_left: bool, move_right: bool) -> None:
-        # A játékos mozgatása a bemenetek alapján
-        if move_left:
-            self.rect.x -= 5
-        if move_right:
-            self.rect.x += 5
-        self._check_boundaries()
+    def move_right(self) -> None:
+        # Csak a cél X koordinátát frissítjük
+        if self.current_lane < len(LANE_POSITIONS) - 1:
+            self.current_lane += 1
+            self.target_x = LANE_POSITIONS[self.current_lane]
 
-    def _check_boundaries(self) -> None:
-        # A képernyő széléhez igazítjuk, nem fix számhoz
-        if self.rect.left < 30:
-            self.rect.left = 30
-        if self.rect.right > SCREEN_WIDTH - 30:
-            self.rect.right = SCREEN_WIDTH - 30
+    def update(self) -> None:
+        # Finom csúszás a cél pozíció felé
+        if self.rect.centerx < self.target_x:
+            # Ne menjen túl a célon (min függvény)
+            self.rect.centerx += min(
+                self.slide_speed, self.target_x - self.rect.centerx
+            )
+        elif self.rect.centerx > self.target_x:
+            self.rect.centerx -= min(
+                self.slide_speed, self.rect.centerx - self.target_x
+            )
 
     def draw(self, screen: pygame.Surface) -> None:
-        # Játékos kirajzolása
         screen.blit(self.image, self.rect)
