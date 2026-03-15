@@ -3,10 +3,8 @@ from game import Game
 
 
 def main() -> None:
-    # A játék inicializálása és elindítása.
+    # Pygame indítása és a játék példányosítása
     pygame.init()
-
-    # Később ide jöhet a menü vagy a car selector betöltése is
     game = Game()
     game.run()
 
