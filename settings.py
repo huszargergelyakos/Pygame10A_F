@@ -5,6 +5,7 @@ FPS = 60
 
 # Színek
 WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
 
 # Út beállításai (középre igazítva)
 ROAD_WIDTH = 540
