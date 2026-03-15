@@ -1,6 +1,7 @@
 import pygame
 from settings import WHITE, YELLOW
 
+
 class Button:
     def __init__(self, x: int, y: int, image_path: str, scale: float = 1.0) -> None:
         img = pygame.image.load(image_path).convert_alpha()
@@ -26,6 +27,7 @@ class Button:
         screen.blit(self.image, self.rect)
         return action
 
+
 class HUD:
     def __init__(self, font_size: int = 30) -> None:
         self.font = pygame.font.SysFont("Arial", font_size, bold=True)
@@ -33,7 +35,9 @@ class HUD:
     def draw_stat(self, screen: pygame.Surface, score: int, fuel: int) -> None:
         """Megjeleníti a pontszámot és az üzemanyagot."""
         score_surf = self.font.render(f"SCORE: {score}", True, WHITE)
-        fuel_surf = self.font.render(f"FUEL: {fuel}%", True, YELLOW if fuel > 20 else (255, 0, 0))
-        
+        fuel_surf = self.font.render(
+            f"FUEL: {fuel}%", True, YELLOW if fuel > 20 else (255, 0, 0)
+        )
+
         screen.blit(score_surf, (10, 10))
         screen.blit(fuel_surf, (10, 40))
