@@ -26,8 +26,8 @@ class Obstacle(BaseObject):
         # Mappa: assets/obstacles/
         path = f"Assets/obstacles/{type_name}.png"
         if type_name == "barrel":
-            super().__init__(path, (68, 94), lane_idx)
-            self.hitbox = self.rect.inflate(-30, -22)
+            super().__init__(path, (56, 112), lane_idx)
+            self.hitbox = self.rect.inflate(-24, -22)
         else:
             super().__init__(path, (100, 100), lane_idx)
 
@@ -35,7 +35,7 @@ class Obstacle(BaseObject):
 class Fuel(BaseObject):
     def __init__(self, lane_idx: int):
         # Mappa: assets/collectibles/ (kis c!)
-        super().__init__("Assets/collectibles/fuel.png", (70, 90), lane_idx)
+        super().__init__("Assets/collectibles/fuel.png", (42, 54), lane_idx)
 
 
 class Enemy(BaseObject):

@@ -63,7 +63,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, y: int, image_path: str) -> None:
         super().__init__()
         img = pygame.image.load(image_path).convert_alpha()
-        self.image = pygame.transform.scale(img, (102, 190))
+        self.image = pygame.transform.scale(img, (112, 210))
         self.rect = self.image.get_rect()
 
         self.lane_idx = 1
@@ -71,7 +71,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.centery = y
         self.target_x = self.rect.centerx
         self.lane_change_speed = 18
-        self.hitbox = self.rect.inflate(-34, -40)
+        self.hitbox = self.rect.inflate(-40, -46)
 
     def move_left(self) -> None:
         if self.lane_idx > 0:
