@@ -23,9 +23,30 @@ class Game:
         )
         pygame.display.set_caption("Highway Dodge")
         self.clock = pygame.time.Clock()
+        self._init_audio_state()
         self._init_menu_state()
         self._init_variables()
         self._init_objects()
+
+    def _init_audio_state(self) -> None:
+        self.sound_on = True
+        self.music_volume = 0.35
+        self.sfx_volume = 0.50
+
+        self.music_path = "Sounds/mixkit-tech-house-vibes-130.mp3"
+        self.coin_sound = self._load_optional_sound("Sounds/coin.mp3")
+        self.fuel_sound = self._load_optional_sound("Sounds/fuel.wav")
+        self.click_sound = self._load_optional_sound("Sounds/click.mp3")
+
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+            pygame.mixer.music.load(self.music_path)
+            pygame.mixer.music.play(-1)
+        except (pygame.error, FileNotFoundError):
+            pass
+
+        self._apply_audio_state()
 
     def _init_menu_state(self) -> None:
         self.screen_state = "home"
@@ -53,6 +74,17 @@ class Game:
         )
         self.home_selected_rect = pygame.Rect(
             menu_x + 26, self.home_quit_rect.bottom + 18, menu_w - 52, 54
+        )
+
+        self.sound_on_img = self._load_optional_image(
+            "Assets/buttons/soundOn.png", (54, 54)
+        )
+        self.sound_off_img = self._load_optional_image(
+            "Assets/buttons/soundOff.png", (54, 54)
+        )
+        self.sound_btn_top_rect = pygame.Rect(SCREEN_WIDTH - 72, 18, 54, 54)
+        self.sound_btn_end_rect = pygame.Rect(
+            SCREEN_WIDTH // 2 + 104, SCREEN_HEIGHT - 126, 62, 62
         )
 
         self.select_play_rect = pygame.Rect(
@@ -106,7 +138,13 @@ class Game:
         self.game_over_stat_font = pygame.font.SysFont("Arial", 46, bold=True)
         self.bg_surfaces = [self._load_bg(i) for i in [2, 5, 4, 3, 8, 1, 7, 6]]
         self.next_biome_idx = 0
+        self.current_biome_idx = 0
+        self.biome_counter = 1
         self.is_nitro_active = False
+        self.nitro_frames = self._load_nitro_frames()
+        self.nitro_anim_index = 0
+        self.nitro_anim_timer = 0
+        self.nitro_anim_speed = 4
         self.nitro_icon = self._load_nitro_icon()
         self.game_over_main_bg = self._load_optional_image(
             "Assets/end.jpg", (SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -119,13 +157,16 @@ class Game:
             "Assets/car_dodge.png", (108, 46)
         )
         self.replay_button = Button(
-            SCREEN_WIDTH // 2, SCREEN_HEIGHT - 96, "Assets/buttons/replay.png", 0.30
+            SCREEN_WIDTH // 2 + 8,
+            SCREEN_HEIGHT - 100,
+            "Assets/buttons/replay.png",
+            0.40,
         )
         self.home_button = Button(
-            SCREEN_WIDTH // 2 - 110,
-            SCREEN_HEIGHT - 96,
+            SCREEN_WIDTH // 2 - 118,
+            SCREEN_HEIGHT - 100,
             "Assets/buttons/home.png",
-            0.28,
+            0.38,
         )
 
     def _init_objects(self) -> None:
@@ -183,11 +224,8 @@ class Game:
 
     def _load_nitro_icon(self) -> pygame.Surface | None:
         for icon_path in [
-            "Assets/nitro/nitro.png",
-            "Assets/nitro/0.gif",
-            "Assets/nitro/1.gif",
-            "Assets/nitro/2.gif",
             "Assets/nitro.png",
+            "Assets/nitro/nitro.png",
             "nitro.png",
         ]:
             try:
@@ -196,6 +234,43 @@ class Game:
             except (pygame.error, FileNotFoundError):
                 continue
         return None
+
+    def _load_nitro_frames(self) -> list[pygame.Surface]:
+        frames: list[pygame.Surface] = []
+        for i in range(6):
+            frame = self._load_optional_image(f"Assets/nitro/{i}.gif", (88, 128))
+            if frame is not None:
+                frames.append(frame)
+        return frames
+
+    def _load_optional_sound(self, path: str) -> pygame.mixer.Sound | None:
+        try:
+            return pygame.mixer.Sound(path)
+        except (pygame.error, FileNotFoundError):
+            return None
+
+    def _apply_audio_state(self) -> None:
+        music_level = self.music_volume if self.sound_on else 0.0
+        sfx_level = self.sfx_volume if self.sound_on else 0.0
+
+        try:
+            pygame.mixer.music.set_volume(music_level)
+        except pygame.error:
+            pass
+
+        for sfx in [self.coin_sound, self.fuel_sound, self.click_sound]:
+            if sfx is not None:
+                sfx.set_volume(sfx_level)
+
+    def _play_sfx(self, sfx: pygame.mixer.Sound | None) -> None:
+        if self.sound_on and sfx is not None:
+            sfx.play()
+
+    def _toggle_sound(self) -> None:
+        self.sound_on = not self.sound_on
+        self._apply_audio_state()
+        if self.sound_on:
+            self._play_sfx(self.click_sound)
 
     def run(self) -> None:
         while self.running:
@@ -236,8 +311,24 @@ class Game:
         self._handle_spawning()
         self._update_groups()
         self._check_collisions()
+        self._update_nitro_anim()
         self._scroll_background()
         self._update_stats()
+
+    def _update_nitro_anim(self) -> None:
+        if not self.nitro_frames:
+            return
+
+        if self.is_nitro_active:
+            self.nitro_anim_timer += 1
+            if self.nitro_anim_timer >= self.nitro_anim_speed:
+                self.nitro_anim_timer = 0
+                self.nitro_anim_index = (self.nitro_anim_index + 1) % len(
+                    self.nitro_frames
+                )
+        else:
+            self.nitro_anim_index = 0
+            self.nitro_anim_timer = 0
 
     def _handle_spawning(self) -> None:
         self._refresh_safe_lane_if_needed()
@@ -420,9 +511,11 @@ class Game:
 
         if pygame.sprite.spritecollide(self.player, self.coins, True):
             self.score += 1
+            self._play_sfx(self.coin_sound)
 
         if pygame.sprite.spritecollide(self.player, self.fuels, True):
             self.nitro_gas = min(100.0, self.nitro_gas + 25.0)
+            self._play_sfx(self.fuel_sound)
 
     def _hitbox_collide(
         self, player_sprite: pygame.sprite.Sprite, obj_sprite: pygame.sprite.Sprite
@@ -444,9 +537,13 @@ class Game:
     def _update_stats(self) -> None:
         self.distance_meters += self.speed // 2
         self.elapsed_time = (pygame.time.get_ticks() - self.start_ticks) // 1000
-        self.next_biome_idx = (self.distance_meters // DISTANCE_PER_BIOME) % len(
+        computed_idx = (self.distance_meters // DISTANCE_PER_BIOME) % len(
             self.bg_surfaces
         )
+        if computed_idx != self.current_biome_idx:
+            self.current_biome_idx = computed_idx
+            self.biome_counter += 1
+        self.next_biome_idx = computed_idx
 
     def _draw(self) -> None:
         if self.screen_state == "home":
@@ -462,6 +559,7 @@ class Game:
         self.screen.blit(self.bg1_surf, (0, self.bg1_y))
         self.screen.blit(self.bg2_surf, (0, self.bg2_y))
         self.road.draw(self.screen)
+        self._draw_nitro_trail()
         self.player.draw(self.screen)
         self.obstacles.draw(self.screen)
         self.coins.draw(self.screen)
@@ -470,6 +568,7 @@ class Game:
         self._draw_hud()
         if self.game_over:
             self._draw_game_over()
+        self._draw_sound_button()
         pygame.display.update()
 
     def _draw_home(self) -> None:
@@ -637,6 +736,30 @@ class Game:
         text = btn_font.render(label, True, WHITE)
         self.screen.blit(text, text.get_rect(center=rect.center))
 
+    def _active_sound_button_rect(self) -> pygame.Rect | None:
+        if self.screen_state == "playing" and not self.game_over:
+            return self.sound_btn_top_rect
+        if self.game_over:
+            return self.sound_btn_end_rect
+        return None
+
+    def _draw_sound_button(self) -> None:
+        btn_rect = self._active_sound_button_rect()
+        if btn_rect is None:
+            return
+
+        icon = self.sound_on_img if self.sound_on else self.sound_off_img
+        if icon is not None:
+            self.screen.blit(icon, btn_rect)
+            return
+
+        fallback = pygame.Surface(btn_rect.size, pygame.SRCALPHA)
+        fallback.fill((0, 0, 0, 120))
+        self.screen.blit(fallback, btn_rect.topleft)
+        pygame.draw.rect(self.screen, WHITE, btn_rect, 2)
+        label = self.font.render("S", True, WHITE)
+        self.screen.blit(label, label.get_rect(center=btn_rect.center))
+
     def _draw_game_over(self) -> None:
         if self.game_over_main_bg:
             self.screen.blit(self.game_over_main_bg, (0, 0))
@@ -673,6 +796,9 @@ class Game:
         dist_txt = self.game_over_stat_font.render(
             f"Distance : {dist_km:.2f} km", True, WHITE
         )
+        biome_txt = self.game_over_stat_font.render(
+            f"Biomes : {self.biome_counter}", True, WHITE
+        )
 
         self.screen.blit(coins_txt, (SCREEN_WIDTH // 2 + 30, coin_y - 13))
         self.screen.blit(cars_txt, (SCREEN_WIDTH // 2 + 30, car_y - 13))
@@ -681,6 +807,9 @@ class Game:
         )
         self.screen.blit(
             dist_txt, dist_txt.get_rect(center=(SCREEN_WIDTH // 2, dist_y))
+        )
+        self.screen.blit(
+            biome_txt, biome_txt.get_rect(center=(SCREEN_WIDTH // 2, dist_y + 70))
         )
 
         if self.replay_button.draw(self.screen):
@@ -712,6 +841,13 @@ class Game:
         ]
         for i, text in enumerate(stats):
             self.screen.blit(self.font.render(text, True, WHITE), (20, 30 + i * 25))
+
+        biome_box = pygame.Surface((190, 48), pygame.SRCALPHA)
+        biome_box.fill((0, 0, 0, 165))
+        biome_box_pos = (SCREEN_WIDTH - 280, 20)
+        self.screen.blit(biome_box, biome_box_pos)
+        biome_txt = self.font.render(f"Biome: {self.biome_counter}", True, WHITE)
+        self.screen.blit(biome_txt, (SCREEN_WIDTH - 270, 32))
 
         center = (SCREEN_WIDTH - 82, SCREEN_HEIGHT - 98)
         radius = 44
@@ -757,10 +893,24 @@ class Game:
             nitro_label, nitro_label.get_rect(center=(center[0], center[1] + 58))
         )
 
+    def _draw_nitro_trail(self) -> None:
+        if not self.is_nitro_active or not self.nitro_frames:
+            return
+
+        frame = self.nitro_frames[self.nitro_anim_index]
+        trail_rect = frame.get_rect(
+            center=(self.player.rect.centerx, self.player.rect.bottom + 18)
+        )
+        self.screen.blit(frame, trail_rect)
+
     def _check_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self._quit_game()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                sound_rect = self._active_sound_button_rect()
+                if sound_rect and sound_rect.collidepoint(event.pos):
+                    self._toggle_sound()
             if event.type == pygame.KEYDOWN:
                 if self.screen_state == "home":
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -795,6 +945,10 @@ class Game:
 
     def _quit_game(self) -> None:
         self.running = False
+        try:
+            pygame.mixer.music.stop()
+        except pygame.error:
+            pass
         pygame.quit()
 
 
