@@ -7,23 +7,32 @@ from player import Player
 
 class Game:
     def __init__(self) -> None:
+        # 1. Alapok inicializálása
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Highway Dodge")
         self.clock = pygame.time.Clock()
         self.running = True
-        self.bg_image = pygame.image.load("Assets/backgrounds/5.jpg").convert()
+
+        # 2. Játék adatok (EZEK HIÁNYOZTAK!)
+        self.speed: int = 5
+        self.distance: int = 0
+        self.biome_index: int = 1
+        self.bg_list: list[str] = ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"]
+        self.font = pygame.font.SysFont("Arial", 32, bold=True)
+
+        # 3. Objektumok és Háttér betöltése
+        self._load_current_bg()
+        self.road = Road("Assets/road.png")
+        self.player = Player(SCREEN_HEIGHT - 150, "Assets/cars/1.png")
+
+    def _load_current_bg(self) -> None:
+        # Aktuális háttér betöltése
+        bg_name = self.bg_list[self.biome_index - 1]
+        path = f"Assets/Backgrounds/{bg_name}"
+        self.bg_image = pygame.image.load(path).convert()
         self.bg_image = pygame.transform.scale(
             self.bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT)
         )
-        # Távolság és Biome adatok
-        self.distance: int = 0
-        self.biome_index: int = 1  # Az 1.jpg-vel kezdünk
-        self.bg_list: list[str] = ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"]
-
-        self._load_current_bg()
-        self.speed: int = 5
-        self.road = Road("Assets/road.png")
-        self.player = Player(SCREEN_HEIGHT - 150, "Assets/cars/1.png")
 
     def run(self) -> None:
         while self.running:
@@ -51,29 +60,34 @@ class Game:
         self._update_distance()
 
     def _update_distance(self) -> None:
-        # Növeljük a távolságot és nézzük, kell-e biome-ot váltani
+        # Távolság növelése és biome váltás 500 egységenként
         self.distance += 1
-        if self.distance % 500 == 0:  # BIOME_DISTANCE értéke
+        if self.distance % 500 == 0:
             self._cycle_biome()
 
     def _cycle_biome(self) -> None:
-        # Következő biome kiválasztása (ha az 5. után vagyunk, visszaugrik az 1.-re)
+        # Következő háttérre ugrás
         self.biome_index = (self.biome_index % 5) + 1
         self._load_current_bg()
 
+    def _draw(self) -> None:
+        # 1. Háttér (biome)
+        self.screen.blit(self.bg_image, (0, 0))
+        # 2. Út
+        self.road.draw(self.screen)
+        # 3. Játékos
+        self.player.draw(self.screen)
+        # 4. HUD (szöveg)
+        self._draw_hud()
+
+        pygame.display.update()
+
     def _draw_hud(self) -> None:
-        # KM szöveg elkészítése és kirajzolása
+        # Távolság kiírása a bal felső sarokba
         km_text = self.font.render(
             f"Distance: {self.distance // 10} KM", True, (255, 255, 255)
         )
         self.screen.blit(km_text, (20, 20))
-
-    def _draw(self) -> None:
-        self.screen.blit(self.bg_image, (0, 0))
-        self.road.draw(self.screen)
-        self.player.draw(self.screen)
-        self._draw_hud()  # <--- Új HUD hívás
-        pygame.display.update()
 
     def _quit_game(self) -> None:
         self.running = False
