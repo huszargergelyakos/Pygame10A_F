@@ -31,18 +31,35 @@ class Game:
         self.screen_state = "home"
         self.car_options = [f"Assets/cars/{i}.png" for i in range(1, 14)]
         self.selected_car_idx = 0
+        self.menu_fonts: dict[int, pygame.font.Font] = {}
 
         self.home_bg = self._load_optional_image(
             "Assets/home.png", (SCREEN_WIDTH, SCREEN_HEIGHT)
         )
-        self.home_title_font = pygame.font.SysFont("Arial", 64, bold=True)
-        self.home_info_font = pygame.font.SysFont("Arial", 30, bold=True)
+        self.home_title_font = self._get_menu_font(64)
+        self.home_info_font = self._get_menu_font(28)
 
-        self.play_button = Button(
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT - 115,
-            "Assets/buttons/play.png",
-            0.72,
+        menu_w = 360
+        menu_h = 68
+        menu_x = (SCREEN_WIDTH - menu_w) // 2
+        menu_start_y = 220
+        menu_gap = 24
+        self.home_play_rect = pygame.Rect(menu_x, menu_start_y, menu_w, menu_h)
+        self.home_select_rect = pygame.Rect(
+            menu_x, menu_start_y + menu_h + menu_gap, menu_w, menu_h
+        )
+        self.home_quit_rect = pygame.Rect(
+            menu_x, menu_start_y + (menu_h + menu_gap) * 2, menu_w, menu_h
+        )
+        self.home_selected_rect = pygame.Rect(
+            menu_x + 26, self.home_quit_rect.bottom + 18, menu_w - 52, 54
+        )
+
+        self.select_play_rect = pygame.Rect(
+            SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 115, 190, 62
+        )
+        self.select_back_rect = pygame.Rect(
+            SCREEN_WIDTH // 2 + 10, SCREEN_HEIGHT - 115, 190, 62
         )
 
         arrow_img = self._load_optional_image("Assets/buttons/arrow.png", (78, 78))
@@ -145,6 +162,24 @@ class Game:
             return img
         except (pygame.error, FileNotFoundError):
             return None
+
+    def _load_menu_font(self, size: int) -> pygame.font.Font:
+        for font_name in [
+            "Press Start 2P",
+            "Pixel Emulator",
+            "Perfect DOS VGA 437",
+            "VT323",
+            "Fixedsys",
+        ]:
+            font_path = pygame.font.match_font(font_name, bold=True)
+            if font_path:
+                return pygame.font.Font(font_path, size)
+        return pygame.font.SysFont("Courier New", size, bold=True)
+
+    def _get_menu_font(self, size: int) -> pygame.font.Font:
+        if size not in self.menu_fonts:
+            self.menu_fonts[size] = self._load_menu_font(size)
+        return self.menu_fonts[size]
 
     def _load_nitro_icon(self) -> pygame.Surface | None:
         for icon_path in [
@@ -419,6 +454,11 @@ class Game:
             pygame.display.update()
             return
 
+        if self.screen_state == "select_car":
+            self._draw_select_car()
+            pygame.display.update()
+            return
+
         self.screen.blit(self.bg1_surf, (0, self.bg1_y))
         self.screen.blit(self.bg2_surf, (0, self.bg2_y))
         self.road.draw(self.screen)
@@ -442,17 +482,65 @@ class Game:
         overlay.fill((0, 0, 0, 70))
         self.screen.blit(overlay, (0, 0))
 
-        title = self.home_title_font.render("HIGHWAY DODGE", True, WHITE)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 100)))
+        title = self.home_title_font.render("MAIN MENU", True, WHITE)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 120)))
+
+        mouse_pressed = pygame.mouse.get_pressed()[0] == 1
+        click_started = mouse_pressed and not self._mouse_prev_down
+        mouse_pos = pygame.mouse.get_pos()
+
+        self._draw_menu_box(
+            self.home_play_rect,
+            "PLAY",
+            self.home_play_rect.collidepoint(mouse_pos),
+        )
+        self._draw_menu_box(
+            self.home_select_rect,
+            "SELECT CAR",
+            self.home_select_rect.collidepoint(mouse_pos),
+        )
+        self._draw_menu_box(
+            self.home_quit_rect,
+            "QUIT",
+            self.home_quit_rect.collidepoint(mouse_pos),
+        )
+        self._draw_menu_box(
+            self.home_selected_rect,
+            f"SELECTED CAR {self.selected_car_idx + 1}",
+            False,
+            text_size=24,
+        )
+
+        if click_started and self.home_play_rect.collidepoint(mouse_pos):
+            self._start_game_from_home()
+        elif click_started and self.home_select_rect.collidepoint(mouse_pos):
+            self.screen_state = "select_car"
+        elif click_started and self.home_quit_rect.collidepoint(mouse_pos):
+            self._quit_game()
+
+        self._mouse_prev_down = mouse_pressed
+
+    def _draw_select_car(self) -> None:
+        if self.home_bg:
+            self.screen.blit(self.home_bg, (0, 0))
+        else:
+            self.screen.fill((22, 20, 40))
+
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 92))
+        self.screen.blit(overlay, (0, 0))
+
+        title = self.home_title_font.render("SELECT CAR", True, WHITE)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 95)))
 
         preview = self.car_preview_surfaces[self.selected_car_idx]
         preview_rect = preview.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 5)
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 10)
         )
-        panel = pygame.Rect(0, 0, 270, 390)
+        panel = pygame.Rect(0, 0, 280, 400)
         panel.center = preview_rect.center
         panel_surf = pygame.Surface(panel.size, pygame.SRCALPHA)
-        panel_surf.fill((8, 8, 18, 145))
+        panel_surf.fill((8, 8, 18, 155))
         self.screen.blit(panel_surf, panel.topleft)
         self.screen.blit(preview, preview_rect)
 
@@ -474,8 +562,6 @@ class Game:
                     self.car_options
                 )
 
-        self._mouse_prev_down = mouse_pressed
-
         car_label = self.home_info_font.render(
             f"Selected Car: {self.selected_car_idx + 1}/13", True, WHITE
         )
@@ -484,8 +570,72 @@ class Game:
             car_label.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 205)),
         )
 
-        if self.play_button.draw(self.screen):
+        self._draw_menu_box(
+            self.select_play_rect,
+            "PLAY",
+            self.select_play_rect.collidepoint(mouse_pos),
+            text_size=34,
+        )
+        self._draw_menu_box(
+            self.select_back_rect,
+            "BACK",
+            self.select_back_rect.collidepoint(mouse_pos),
+            text_size=34,
+        )
+
+        if click_started and self.select_play_rect.collidepoint(mouse_pos):
             self._start_game_from_home()
+        elif click_started and self.select_back_rect.collidepoint(mouse_pos):
+            self.screen_state = "home"
+
+        self._mouse_prev_down = mouse_pressed
+
+    def _draw_menu_box(
+        self,
+        rect: pygame.Rect,
+        label: str,
+        hovered: bool,
+        text_size: int = 38,
+    ) -> None:
+        # Vágott sarkú, fényes keret a képen látható "box" stílushoz.
+        alpha_fill = 120 if hovered else 85
+        fill_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+
+        cut = 10
+        local_pts = [
+            (cut, 0),
+            (rect.width - cut, 0),
+            (rect.width, cut),
+            (rect.width, rect.height - cut),
+            (rect.width - cut, rect.height),
+            (cut, rect.height),
+            (0, rect.height - cut),
+            (0, cut),
+        ]
+        pygame.draw.polygon(fill_surf, (20, 20, 24, alpha_fill), local_pts)
+        self.screen.blit(fill_surf, rect.topleft)
+
+        border_col = (255, 255, 255)
+        glow_col = (255, 255, 255, 65 if hovered else 35)
+        pts = [
+            (rect.left + cut, rect.top),
+            (rect.right - cut, rect.top),
+            (rect.right, rect.top + cut),
+            (rect.right, rect.bottom - cut),
+            (rect.right - cut, rect.bottom),
+            (rect.left + cut, rect.bottom),
+            (rect.left, rect.bottom - cut),
+            (rect.left, rect.top + cut),
+        ]
+
+        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        pygame.draw.polygon(glow_surf, glow_col, pts, 4)
+        self.screen.blit(glow_surf, (0, 0))
+        pygame.draw.polygon(self.screen, border_col, pts, 2)
+
+        btn_font = self._get_menu_font(text_size)
+        text = btn_font.render(label, True, WHITE)
+        self.screen.blit(text, text.get_rect(center=rect.center))
 
     def _draw_game_over(self) -> None:
         if self.game_over_main_bg:
@@ -537,11 +687,6 @@ class Game:
             self._reset_run()
         if self.home_button.draw(self.screen):
             self._go_to_home()
-
-        hint = self.font.render("R = újraindítás, ESC = kilépés", True, WHITE)
-        self.screen.blit(
-            hint, hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 40))
-        )
 
     def _reset_run(self) -> None:
         self._init_variables()
@@ -620,6 +765,15 @@ class Game:
                 if self.screen_state == "home":
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         self._start_game_from_home()
+                    if event.key in (pygame.K_c, pygame.K_s):
+                        self.screen_state = "select_car"
+                    if event.key == pygame.K_ESCAPE:
+                        self._quit_game()
+                elif self.screen_state == "select_car":
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        self._start_game_from_home()
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        self.screen_state = "home"
                     if event.key in (pygame.K_LEFT, pygame.K_a):
                         self.selected_car_idx = (self.selected_car_idx - 1) % len(
                             self.car_options
