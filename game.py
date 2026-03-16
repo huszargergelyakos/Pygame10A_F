@@ -668,9 +668,7 @@ class Game:
         )
         panel = pygame.Rect(0, 0, 280, 400)
         panel.center = preview_rect.center
-        panel_surf = pygame.Surface(panel.size, pygame.SRCALPHA)
-        panel_surf.fill((8, 8, 18, 155))
-        self.screen.blit(panel_surf, panel.topleft)
+        self._draw_select_preview_panel(panel)
         self.screen.blit(preview, preview_rect)
 
         mouse_pressed = pygame.mouse.get_pressed()[0] == 1
@@ -807,6 +805,14 @@ class Game:
 
         text = self._get_menu_font(text_size).render(label, True, WHITE)
         self.screen.blit(text, text.get_rect(center=rect.center))
+
+    def _draw_select_preview_panel(self, rect: pygame.Rect) -> None:
+        # Szelidebb, lekerekitett panel a kivagott sarku valtozat helyett.
+        panel_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+        panel_rect = panel_surf.get_rect()
+        pygame.draw.rect(panel_surf, (24, 10, 38, 168), panel_rect, border_radius=20)
+        pygame.draw.rect(panel_surf, (40, 18, 66, 120), panel_rect, 2, border_radius=20)
+        self.screen.blit(panel_surf, rect.topleft)
 
     def _active_sound_button_rect(self) -> pygame.Rect | None:
         if self.screen_state == "playing" and not self.game_over:
