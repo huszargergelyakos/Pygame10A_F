@@ -140,10 +140,6 @@ class Game:
         self.current_biome_idx = 0
         self.biome_counter = 1
         self.is_nitro_active = False
-        self.nitro_frames = self._load_nitro_frames()
-        self.nitro_anim_index = 0
-        self.nitro_anim_timer = 0
-        self.nitro_anim_speed = 4
         self.nitro_icon = self._load_nitro_icon()
         self.game_over_main_bg = self._load_optional_image(
             "Assets/end.jpg", (SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -250,14 +246,6 @@ class Game:
                 continue
         return None
 
-    def _load_nitro_frames(self) -> list[pygame.Surface]:
-        frames: list[pygame.Surface] = []
-        for i in range(6):
-            frame = self._load_optional_image(f"Assets/nitro/{i}.gif", (88, 128))
-            if frame is not None:
-                frames.append(frame)
-        return frames
-
     def _load_optional_sound(self, path: str) -> pygame.mixer.Sound | None:
         try:
             return pygame.mixer.Sound(path)
@@ -326,24 +314,8 @@ class Game:
         self._handle_spawning()
         self._update_groups()
         self._check_collisions()
-        self._update_nitro_anim()
         self._scroll_background()
         self._update_stats()
-
-    def _update_nitro_anim(self) -> None:
-        if not self.nitro_frames:
-            return
-
-        if self.is_nitro_active:
-            self.nitro_anim_timer += 1
-            if self.nitro_anim_timer >= self.nitro_anim_speed:
-                self.nitro_anim_timer = 0
-                self.nitro_anim_index = (self.nitro_anim_index + 1) % len(
-                    self.nitro_frames
-                )
-        else:
-            self.nitro_anim_index = 0
-            self.nitro_anim_timer = 0
 
     def _handle_spawning(self) -> None:
         self._refresh_safe_lane_if_needed()
@@ -575,7 +547,6 @@ class Game:
         self.screen.blit(self.bg1_surf, (0, self.bg1_y))
         self.screen.blit(self.bg2_surf, (0, self.bg2_y))
         self.road.draw(self.screen)
-        self._draw_nitro_trail()
         self.player.draw(self.screen)
         self.obstacles.draw(self.screen)
         self.coins.draw(self.screen)
@@ -1018,16 +989,6 @@ class Game:
         self.screen.blit(
             nitro_label, nitro_label.get_rect(center=(center[0], center[1] + 58))
         )
-
-    def _draw_nitro_trail(self) -> None:
-        if not self.is_nitro_active or not self.nitro_frames:
-            return
-
-        frame = self.nitro_frames[self.nitro_anim_index]
-        trail_rect = frame.get_rect(
-            center=(self.player.rect.centerx, self.player.rect.bottom + 18)
-        )
-        self.screen.blit(frame, trail_rect)
 
     def _check_events(self) -> None:
         for event in pygame.event.get():

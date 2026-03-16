@@ -1,5 +1,6 @@
 import pygame
 import random
+from pathlib import Path
 from settings import SCREEN_HEIGHT, LANE_POSITIONS
 
 
@@ -40,10 +41,22 @@ class Fuel(BaseObject):
 
 class Enemy(BaseObject):
     def __init__(self, lane_idx: int):
-        # Ellenfelek: Assets/enemy/1.png ... 10.png
-        enemy_id = random.randint(1, 10)
-        path = f"Assets/enemy/{enemy_id}.png"
-        super().__init__(path, (90, 160), lane_idx)
+        path = self._pick_enemy_image_path()
+        super().__init__(path, (98, 174), lane_idx)
+
+    def _pick_enemy_image_path(self) -> str:
+        candidates: list[str] = []
+        for folder in ["Assets/enemy", "Assets/enemies"]:
+            for i in range(1, 11):
+                candidate = f"{folder}/{i}.png"
+                if Path(candidate).exists():
+                    candidates.append(candidate)
+
+        if candidates:
+            return random.choice(candidates)
+
+        # Fallback, ha nincs meg az enemy mappa vagy a fajlok.
+        return "Assets/cars/1.png"
 
 
 class Coin(pygame.sprite.Sprite):
