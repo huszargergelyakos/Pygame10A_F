@@ -94,8 +94,8 @@ class Game:
         )
 
         arrow_img = self._load_optional_image("Assets/buttons/arrow.png", (78, 78))
-        self.arrow_right_img = arrow_img
-        self.arrow_left_img = (
+        self.arrow_left_img = arrow_img
+        self.arrow_right_img = (
             pygame.transform.flip(arrow_img, True, False) if arrow_img else None
         )
         self.arrow_left_rect = pygame.Rect(130, SCREEN_HEIGHT // 2 - 10, 78, 78)
@@ -628,9 +628,9 @@ class Game:
 
         self._mouse_prev_down = mouse_pressed
 
-    def _draw_home_title_box(self, title_text: str) -> None:
+    def _draw_home_title_box(self, title_text: str, center_y: int = 120) -> None:
         title_rect = pygame.Rect(0, 0, 520, 92)
-        title_rect.center = (SCREEN_WIDTH // 2, 120)
+        title_rect.center = (SCREEN_WIDTH // 2, center_y)
         self._draw_cut_box(
             rect=title_rect,
             label=title_text,
@@ -660,8 +660,7 @@ class Game:
         overlay.fill((0, 0, 0, 92))
         self.screen.blit(overlay, (0, 0))
 
-        title = self.home_title_font.render("SELECT CAR", True, WHITE)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 95)))
+        self._draw_home_title_box("SELECT CAR", center_y=145)
 
         preview = self.car_preview_surfaces[self.selected_car_idx]
         preview_rect = preview.get_rect(
