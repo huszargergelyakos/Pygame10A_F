@@ -596,8 +596,7 @@ class Game:
         overlay.fill((0, 0, 0, 70))
         self.screen.blit(overlay, (0, 0))
 
-        title = self.home_title_font.render("MAIN MENU", True, WHITE)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 120)))
+        self._draw_home_title_box("MAIN MENU")
 
         mouse_pressed = pygame.mouse.get_pressed()[0] == 1
         click_started = mouse_pressed and not self._mouse_prev_down
@@ -618,12 +617,7 @@ class Game:
             "QUIT",
             self.home_quit_rect.collidepoint(mouse_pos),
         )
-        self._draw_menu_box(
-            self.home_selected_rect,
-            f"SELECTED CAR {self.selected_car_idx + 1}",
-            False,
-            text_size=24,
-        )
+        self._draw_selected_car_box(f"SELECTED CAR {self.selected_car_idx + 1}")
 
         if click_started and self.home_play_rect.collidepoint(mouse_pos):
             self._start_game_from_home()
@@ -633,6 +627,28 @@ class Game:
             self._quit_game()
 
         self._mouse_prev_down = mouse_pressed
+
+    def _draw_home_title_box(self, title_text: str) -> None:
+        title_rect = pygame.Rect(0, 0, 520, 92)
+        title_rect.center = (SCREEN_WIDTH // 2, 120)
+        self._draw_cut_box(
+            rect=title_rect,
+            label=title_text,
+            text_size=56,
+            fill_color=(38, 18, 72, 192),
+            border_color=(162, 128, 245),
+            glow_color=(162, 128, 245, 70),
+        )
+
+    def _draw_selected_car_box(self, label: str) -> None:
+        self._draw_cut_box(
+            rect=self.home_selected_rect,
+            label=label,
+            text_size=24,
+            fill_color=(45, 14, 40, 170),
+            border_color=(255, 160, 210),
+            glow_color=(255, 160, 210, 55),
+        )
 
     def _draw_select_car(self) -> None:
         if self.home_bg:
@@ -749,6 +765,48 @@ class Game:
 
         btn_font = self._get_menu_font(text_size)
         text = btn_font.render(label, True, WHITE)
+        self.screen.blit(text, text.get_rect(center=rect.center))
+
+    def _draw_cut_box(
+        self,
+        rect: pygame.Rect,
+        label: str,
+        text_size: int,
+        fill_color: tuple[int, int, int, int],
+        border_color: tuple[int, int, int],
+        glow_color: tuple[int, int, int, int],
+    ) -> None:
+        fill_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        cut = 10
+        local_pts = [
+            (cut, 0),
+            (rect.width - cut, 0),
+            (rect.width, cut),
+            (rect.width, rect.height - cut),
+            (rect.width - cut, rect.height),
+            (cut, rect.height),
+            (0, rect.height - cut),
+            (0, cut),
+        ]
+        pygame.draw.polygon(fill_surf, fill_color, local_pts)
+        self.screen.blit(fill_surf, rect.topleft)
+
+        pts = [
+            (rect.left + cut, rect.top),
+            (rect.right - cut, rect.top),
+            (rect.right, rect.top + cut),
+            (rect.right, rect.bottom - cut),
+            (rect.right - cut, rect.bottom),
+            (rect.left + cut, rect.bottom),
+            (rect.left, rect.bottom - cut),
+            (rect.left, rect.top + cut),
+        ]
+        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        pygame.draw.polygon(glow_surf, glow_color, pts, 4)
+        self.screen.blit(glow_surf, (0, 0))
+        pygame.draw.polygon(self.screen, border_color, pts, 2)
+
+        text = self._get_menu_font(text_size).render(label, True, WHITE)
         self.screen.blit(text, text.get_rect(center=rect.center))
 
     def _active_sound_button_rect(self) -> pygame.Rect | None:
