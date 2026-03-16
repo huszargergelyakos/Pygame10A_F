@@ -12,7 +12,6 @@ from settings import (
 from road import Road
 from player import Player
 from objects import Obstacle, Coin, Fuel, Enemy  # Új import: Enemy
-from ui import Button
 
 
 class Game:
@@ -134,8 +133,8 @@ class Game:
         self.critical_window_px = 360
         self.start_ticks = pygame.time.get_ticks()
         self.font = pygame.font.SysFont("Arial", 24, bold=True)
-        self.game_over_title_font = pygame.font.SysFont("Arial", 64, bold=True)
-        self.game_over_stat_font = pygame.font.SysFont("Arial", 46, bold=True)
+        self.game_over_title_font = self._get_menu_font(64)
+        self.game_over_stat_font = self._get_menu_font(52)
         self.bg_surfaces = [self._load_bg(i) for i in [2, 5, 4, 3, 8, 1, 7, 6]]
         self.next_biome_idx = 0
         self.current_biome_idx = 0
@@ -152,22 +151,38 @@ class Game:
         self.game_over_logo = self._load_optional_image(
             "Assets/game_over.png", (560, 270)
         )
-        self.coin_stat_icon = self._load_optional_image("Assets/coins/1.png", (54, 54))
+        self.coin_stat_icon = self._load_optional_image("Assets/coins/1.png", (82, 82))
         self.car_stat_icon = self._load_optional_image(
-            "Assets/car_dodge.png", (108, 46)
+            "Assets/car_dodge.png", (166, 96)
         )
-        self.replay_button = Button(
-            SCREEN_WIDTH // 2 + 8,
-            SCREEN_HEIGHT - 100,
-            "Assets/buttons/replay.png",
-            0.40,
+
+        end_btn_size = 96
+        end_btn_gap = 156
+        end_btn_y = SCREEN_HEIGHT - 100
+        end_center_x = SCREEN_WIDTH // 2
+
+        self.home_btn_end_rect = pygame.Rect(0, 0, end_btn_size, end_btn_size)
+        self.replay_btn_end_rect = pygame.Rect(0, 0, end_btn_size, end_btn_size)
+        self.sound_btn_end_rect = pygame.Rect(0, 0, end_btn_size, end_btn_size)
+
+        self.home_btn_end_rect.center = (end_center_x - end_btn_gap, end_btn_y)
+        self.replay_btn_end_rect.center = (end_center_x, end_btn_y)
+        self.sound_btn_end_rect.center = (end_center_x + end_btn_gap, end_btn_y)
+
+        self.home_btn_end_img = self._load_optional_image(
+            "Assets/buttons/home.png", (end_btn_size, end_btn_size)
         )
-        self.home_button = Button(
-            SCREEN_WIDTH // 2 - 118,
-            SCREEN_HEIGHT - 100,
-            "Assets/buttons/home.png",
-            0.38,
+        self.replay_btn_end_img = self._load_optional_image(
+            "Assets/buttons/replay.png", (end_btn_size, end_btn_size)
         )
+        self.sound_on_end_img = self._load_optional_image(
+            "Assets/buttons/soundOn.png", (end_btn_size, end_btn_size)
+        )
+        self.sound_off_end_img = self._load_optional_image(
+            "Assets/buttons/soundOff.png", (end_btn_size, end_btn_size)
+        )
+
+        self._end_prev_down = False
 
     def _init_objects(self) -> None:
         self.road = Road("Assets/road.png")
@@ -748,7 +763,11 @@ class Game:
         if btn_rect is None:
             return
 
-        icon = self.sound_on_img if self.sound_on else self.sound_off_img
+        if self.game_over:
+            icon = self.sound_on_end_img if self.sound_on else self.sound_off_end_img
+        else:
+            icon = self.sound_on_img if self.sound_on else self.sound_off_img
+
         if icon is not None:
             self.screen.blit(icon, btn_rect)
             return
@@ -775,47 +794,90 @@ class Game:
             title = self.game_over_title_font.render("GAME OVER", True, (255, 80, 80))
             self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 150)))
 
-        coin_y = 320
-        car_y = 415
-        time_y = 510
-        dist_y = 600
+        coin_y = 332
+        car_y = 430
+        stats_start_y = 530
+        stats_step = 82
 
         if self.coin_stat_icon:
             self.screen.blit(
-                self.coin_stat_icon, (SCREEN_WIDTH // 2 - 155, coin_y - 22)
+                self.coin_stat_icon, (SCREEN_WIDTH // 2 - 195, coin_y - 44)
             )
         if self.car_stat_icon:
-            self.screen.blit(self.car_stat_icon, (SCREEN_WIDTH // 2 - 175, car_y - 12))
+            self.screen.blit(self.car_stat_icon, (SCREEN_WIDTH // 2 - 232, car_y - 36))
 
         coins_txt = self.game_over_stat_font.render(str(self.score), True, WHITE)
         cars_txt = self.game_over_stat_font.render(str(self.cars_dodged), True, WHITE)
-        time_txt = self.game_over_stat_font.render(
-            f"Time : {self.elapsed_time}s", True, WHITE
+
+        time_label_txt = self.game_over_stat_font.render("Time:", True, WHITE)
+        time_value_txt = self.game_over_stat_font.render(
+            f"{self.elapsed_time}s", True, WHITE
         )
+
+        biome_label_txt = self.game_over_stat_font.render("Biomes:", True, WHITE)
+        biome_value_txt = self.game_over_stat_font.render(
+            str(self.biome_counter), True, WHITE
+        )
+
         dist_km = self.distance_meters / 1000.0
-        dist_txt = self.game_over_stat_font.render(
-            f"Distance : {dist_km:.2f} km", True, WHITE
-        )
-        biome_txt = self.game_over_stat_font.render(
-            f"Biomes : {self.biome_counter}", True, WHITE
+        dist_label_txt = self.game_over_stat_font.render("Distance:", True, WHITE)
+        dist_value_txt = self.game_over_stat_font.render(
+            f"{dist_km:.2f} km", True, WHITE
         )
 
-        self.screen.blit(coins_txt, (SCREEN_WIDTH // 2 + 30, coin_y - 13))
-        self.screen.blit(cars_txt, (SCREEN_WIDTH // 2 + 30, car_y - 13))
+        self.screen.blit(coins_txt, (SCREEN_WIDTH // 2 + 18, coin_y - 24))
+        self.screen.blit(cars_txt, (SCREEN_WIDTH // 2 + 18, car_y - 24))
+
+        time_row_y = stats_start_y
+        biome_row_y = stats_start_y + stats_step
+        dist_row_y = stats_start_y + (stats_step * 2)
+
+        time_pair_width = time_label_txt.get_width() + 18 + time_value_txt.get_width()
+        time_start_x = (SCREEN_WIDTH - time_pair_width) // 2
+        self.screen.blit(time_label_txt, (time_start_x, time_row_y - 28))
         self.screen.blit(
-            time_txt, time_txt.get_rect(center=(SCREEN_WIDTH // 2, time_y))
-        )
-        self.screen.blit(
-            dist_txt, dist_txt.get_rect(center=(SCREEN_WIDTH // 2, dist_y))
-        )
-        self.screen.blit(
-            biome_txt, biome_txt.get_rect(center=(SCREEN_WIDTH // 2, dist_y + 70))
+            time_value_txt,
+            (time_start_x + time_label_txt.get_width() + 18, time_row_y - 32),
         )
 
-        if self.replay_button.draw(self.screen):
+        biome_pair_width = (
+            biome_label_txt.get_width() + 18 + biome_value_txt.get_width()
+        )
+        biome_start_x = (SCREEN_WIDTH - biome_pair_width) // 2
+        self.screen.blit(biome_label_txt, (biome_start_x, biome_row_y - 28))
+        self.screen.blit(
+            biome_value_txt,
+            (biome_start_x + biome_label_txt.get_width() + 18, biome_row_y - 32),
+        )
+
+        dist_pair_width = dist_label_txt.get_width() + 18 + dist_value_txt.get_width()
+        dist_start_x = (SCREEN_WIDTH - dist_pair_width) // 2
+        self.screen.blit(dist_label_txt, (dist_start_x, dist_row_y - 28))
+        self.screen.blit(
+            dist_value_txt,
+            (dist_start_x + dist_label_txt.get_width() + 18, dist_row_y - 32),
+        )
+
+        mouse_pressed = pygame.mouse.get_pressed()[0] == 1
+        click_started = mouse_pressed and not self._end_prev_down
+        mouse_pos = pygame.mouse.get_pos()
+
+        if self.home_btn_end_img:
+            self.screen.blit(self.home_btn_end_img, self.home_btn_end_rect)
+        else:
+            pygame.draw.rect(self.screen, WHITE, self.home_btn_end_rect, 2)
+
+        if self.replay_btn_end_img:
+            self.screen.blit(self.replay_btn_end_img, self.replay_btn_end_rect)
+        else:
+            pygame.draw.rect(self.screen, WHITE, self.replay_btn_end_rect, 2)
+
+        if click_started and self.replay_btn_end_rect.collidepoint(mouse_pos):
             self._reset_run()
-        if self.home_button.draw(self.screen):
+        if click_started and self.home_btn_end_rect.collidepoint(mouse_pos):
             self._go_to_home()
+
+        self._end_prev_down = mouse_pressed
 
     def _reset_run(self) -> None:
         self._init_variables()
