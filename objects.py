@@ -40,9 +40,9 @@ class Fuel(BaseObject):
 
 class Enemy(BaseObject):
     def __init__(self, lane_idx: int):
-        # Ellenfelek: assets/enemies/ (tegyél ide pár autót: 1.png, 2.png stb.)
-        # Ha nincs még enemies mappa, használd az Assets/cars/1.png-t tesztnek:
-        path = f"Assets/cars/1.png"
+        # Ellenfelek: Assets/enemy/1.png ... 10.png
+        enemy_id = random.randint(1, 10)
+        path = f"Assets/enemy/{enemy_id}.png"
         super().__init__(path, (90, 160), lane_idx)
 
 

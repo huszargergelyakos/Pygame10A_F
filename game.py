@@ -511,6 +511,7 @@ class Game:
         self.fuels.update(self.speed)
         prev_enemies = set(self.enemies.sprites())
         self.enemies.update(self.speed + 2)  # Az ellenfelek picit gyorsabbak
+
         gone_enemies = [enemy for enemy in prev_enemies if enemy not in self.enemies]
         self.cars_dodged += len(gone_enemies)
 
