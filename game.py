@@ -81,7 +81,7 @@ class Game:
         self.sound_off_img = self._load_optional_image(
             "Assets/buttons/soundOff.png", (54, 54)
         )
-        self.sound_btn_top_rect = pygame.Rect(SCREEN_WIDTH - 72, 18, 54, 54)
+        self.pause_menu_btn_rect = pygame.Rect(SCREEN_WIDTH - 164, 18, 146, 54)
         self.sound_btn_end_rect = pygame.Rect(
             SCREEN_WIDTH // 2 + 104, SCREEN_HEIGHT - 126, 62, 62
         )
@@ -111,6 +111,33 @@ class Game:
                 pygame.transform.smoothscale(car_img, (170, 320))
             )
 
+        # Pause panel elemek
+        panel_w, panel_h = 360, 340
+        panel_x = (SCREEN_WIDTH - panel_w) // 2
+        panel_y = (SCREEN_HEIGHT - panel_h) // 2
+        self.pause_panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+
+        self.pause_title_rect = pygame.Rect(
+            panel_x + 30, panel_y + 24, panel_w - 60, 62
+        )
+        icon_size = 70
+        icon_gap = 30
+        icons_y = panel_y + 128
+        icons_start_x = panel_x + (panel_w - ((icon_size * 3) + (icon_gap * 2))) // 2
+
+        self.pause_restart_rect = pygame.Rect(
+            icons_start_x, icons_y, icon_size, icon_size
+        )
+        self.pause_home_rect = pygame.Rect(
+            icons_start_x + icon_size + icon_gap, icons_y, icon_size, icon_size
+        )
+        self.pause_sound_rect = pygame.Rect(
+            icons_start_x + (icon_size + icon_gap) * 2, icons_y, icon_size, icon_size
+        )
+        self.pause_resume_rect = pygame.Rect(
+            panel_x + 52, panel_y + 238, panel_w - 104, 68
+        )
+
     def _init_variables(self) -> None:
         self.running, self.base_speed = True, 5
         self.speed = self.base_speed
@@ -123,6 +150,9 @@ class Game:
         self.nitro_regen_delay_timer = 0
         self.nitro_regen_delay_frames = int(0.25 * FPS)
         self.game_over = False
+        self.paused = False
+        self.pause_started_ticks: int | None = None
+        self.paused_total_ms = 0
         self.lane_cooldowns = [0, 0, 0, 0]
         self.safe_lane_idx = random.randint(0, len(LANE_POSITIONS) - 1)
         self.safe_lane_span_m = 100
@@ -278,7 +308,11 @@ class Game:
     def run(self) -> None:
         while self.running:
             self._check_events()
-            if self.screen_state == "playing" and not self.game_over:
+            if (
+                self.screen_state == "playing"
+                and not self.game_over
+                and not self.paused
+            ):
                 self._handle_nitro()
                 self._update()
             self._draw()
@@ -524,7 +558,8 @@ class Game:
 
     def _update_stats(self) -> None:
         self.distance_meters += self.speed // 2
-        self.elapsed_time = (pygame.time.get_ticks() - self.start_ticks) // 1000
+        active_ms = pygame.time.get_ticks() - self.start_ticks - self.paused_total_ms
+        self.elapsed_time = max(0, active_ms // 1000)
         computed_idx = (self.distance_meters // DISTANCE_PER_BIOME) % len(
             self.bg_surfaces
         )
@@ -555,6 +590,10 @@ class Game:
         self._draw_hud()
         if self.game_over:
             self._draw_game_over()
+        elif self.screen_state == "playing":
+            self._draw_pause_menu_button()
+            if self.paused:
+                self._draw_pause_overlay()
         self._draw_sound_button()
         pygame.display.update()
 
@@ -787,11 +826,122 @@ class Game:
         self.screen.blit(panel_surf, rect.topleft)
 
     def _active_sound_button_rect(self) -> pygame.Rect | None:
-        if self.screen_state == "playing" and not self.game_over:
-            return self.sound_btn_top_rect
         if self.game_over:
             return self.sound_btn_end_rect
         return None
+
+    def _draw_pause_menu_button(self) -> None:
+        rect = self.pause_menu_btn_rect
+        mouse_pos = pygame.mouse.get_pos()
+        hovered = rect.collidepoint(mouse_pos)
+
+        # Ugyanaz a transzparencia-érzet, mint a HUD counter panelen.
+        fill_col = (10, 10, 14, 205 if hovered else 188)
+        border_col = (170, 230, 255)
+        pygame.draw.rect(self.screen, fill_col, rect, border_radius=13)
+        pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=13)
+
+        icon_center = (rect.x + 25, rect.centery)
+        if self.paused:
+            play_pts = [
+                (icon_center[0] - 7, icon_center[1] - 11),
+                (icon_center[0] - 7, icon_center[1] + 11),
+                (icon_center[0] + 11, icon_center[1]),
+            ]
+            pygame.draw.polygon(self.screen, WHITE, play_pts)
+        else:
+            icon_x = rect.x + 16
+            icon_y = rect.y + 15
+            icon_w = 16
+            icon_h = 24
+            pygame.draw.rect(
+                self.screen, WHITE, (icon_x, icon_y, 5, icon_h), border_radius=2
+            )
+            pygame.draw.rect(
+                self.screen,
+                WHITE,
+                (icon_x + icon_w - 5, icon_y, 5, icon_h),
+                border_radius=2,
+            )
+
+        menu_text = self._get_menu_font(26).render("Menu", True, WHITE)
+        text_rect = menu_text.get_rect(midleft=(rect.x + 44, rect.centery + 1))
+        self.screen.blit(menu_text, text_rect)
+
+    def _draw_pause_overlay(self) -> None:
+        panel = pygame.Surface(self.pause_panel_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(panel, (10, 10, 14, 196), panel.get_rect(), border_radius=24)
+        pygame.draw.rect(panel, (205, 215, 235), panel.get_rect(), 3, border_radius=24)
+        self.screen.blit(panel, self.pause_panel_rect.topleft)
+
+        self._draw_cut_box(
+            rect=self.pause_title_rect,
+            label="Paused",
+            text_size=48,
+            fill_color=(14, 14, 20, 206),
+            border_color=(215, 226, 245),
+            glow_color=(180, 210, 255, 32),
+        )
+
+        self._draw_pause_icon_button(
+            self.pause_restart_rect,
+            self.replay_btn_end_img,
+            fallback_label="R",
+        )
+        self._draw_pause_icon_button(
+            self.pause_home_rect,
+            self.home_btn_end_img,
+            fallback_label="H",
+        )
+        sound_icon = self.sound_on_img if self.sound_on else self.sound_off_img
+        self._draw_pause_icon_button(
+            self.pause_sound_rect,
+            sound_icon,
+            fallback_label="S",
+        )
+
+        self._draw_cut_box(
+            rect=self.pause_resume_rect,
+            label="Resume",
+            text_size=44,
+            fill_color=(26, 86, 34, 188),
+            border_color=(196, 255, 210),
+            glow_color=(196, 255, 210, 36),
+        )
+
+    def _draw_pause_icon_button(
+        self,
+        rect: pygame.Rect,
+        icon: pygame.Surface | None,
+        fallback_label: str,
+    ) -> None:
+        mouse_pos = pygame.mouse.get_pos()
+        hovered = rect.collidepoint(mouse_pos)
+
+        bg_col = (14, 14, 20, 216 if hovered else 188)
+        border_col = (205, 220, 246)
+        pygame.draw.rect(self.screen, bg_col, rect, border_radius=14)
+        pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=14)
+
+        if icon is not None:
+            icon_size = int(rect.width * 0.72)
+            scaled = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+            icon_rect = scaled.get_rect(center=rect.center)
+            self.screen.blit(scaled, icon_rect)
+            return
+
+        label = self._get_menu_font(30).render(fallback_label, True, WHITE)
+        self.screen.blit(label, label.get_rect(center=rect.center))
+
+    def _toggle_pause(self) -> None:
+        if self.screen_state != "playing" or self.game_over:
+            return
+        self.paused = not self.paused
+        if self.paused:
+            self.pause_started_ticks = pygame.time.get_ticks()
+        elif self.pause_started_ticks is not None:
+            self.paused_total_ms += pygame.time.get_ticks() - self.pause_started_ticks
+            self.pause_started_ticks = None
 
     def _draw_sound_button(self) -> None:
         btn_rect = self._active_sound_button_rect()
@@ -938,7 +1088,7 @@ class Game:
         )
         pygame.draw.rect(
             hud_panel,
-            (255, 230, 120, 165),
+            (170, 230, 255, 170),
             (0, 0, hud_rect.width, hud_rect.height),
             2,
             border_radius=16,
@@ -950,7 +1100,7 @@ class Game:
         )
         pygame.draw.rect(
             hud_glow,
-            (255, 220, 90, 42),
+            (150, 220, 255, 42),
             (0, 0, hud_rect.width + 8, hud_rect.height + 8),
             4,
             border_radius=18,
@@ -1021,6 +1171,23 @@ class Game:
                 sound_rect = self._active_sound_button_rect()
                 if sound_rect and sound_rect.collidepoint(event.pos):
                     self._toggle_sound()
+                if (
+                    self.screen_state == "playing"
+                    and not self.game_over
+                    and self.pause_menu_btn_rect.collidepoint(event.pos)
+                ):
+                    self._toggle_pause()
+                if self.screen_state == "playing" and self.paused:
+                    if self.pause_restart_rect.collidepoint(event.pos):
+                        self.paused = False
+                        self._reset_run()
+                    elif self.pause_home_rect.collidepoint(event.pos):
+                        self.paused = False
+                        self._go_to_home()
+                    elif self.pause_sound_rect.collidepoint(event.pos):
+                        self._toggle_sound()
+                    elif self.pause_resume_rect.collidepoint(event.pos):
+                        self._toggle_pause()
             if event.type == pygame.KEYDOWN:
                 if self.screen_state == "home":
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -1048,6 +1215,11 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         self._quit_game()
                 else:
+                    if event.key == pygame.K_ESCAPE:
+                        self._toggle_pause()
+                        continue
+                    if self.paused:
+                        continue
                     if event.key in (pygame.K_LEFT, pygame.K_a):
                         self.player.move_left()
                     if event.key in (pygame.K_RIGHT, pygame.K_d):
