@@ -26,7 +26,7 @@ class Player(pygame.sprite.Sprite):
             self.lane_idx += 1
             self.target_x = LANE_POSITIONS[self.lane_idx]
 
-    def update(self, is_nitro_active: bool = False) -> None:
+    def update(self, _is_nitro_active: bool = False) -> None:
         if self.rect.centerx < self.target_x:
             self.rect.centerx = min(
                 self.rect.centerx + self.lane_change_speed, self.target_x

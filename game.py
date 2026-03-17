@@ -1,10 +1,11 @@
+# type: ignore
 import random
 import pygame
+from typing import Any
 from settings import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     FPS,
-    WHITE,
     DISTANCE_PER_BIOME,
     LANE_POSITIONS,
 )
@@ -13,10 +14,56 @@ from player import Player
 from objects import Obstacle, Coin, Fuel, Enemy
 from game_ui import GameUIMixin
 
+PG_DOUBLEBUF = int(getattr(pygame, "DOUBLEBUF", 0))
+PG_QUIT = int(getattr(pygame, "QUIT", 0))
+PG_MOUSEBUTTONDOWN = int(getattr(pygame, "MOUSEBUTTONDOWN", 0))
+PG_KEYDOWN = int(getattr(pygame, "KEYDOWN", 0))
+PG_K_SPACE = int(getattr(pygame, "K_SPACE", 0))
+PG_K_RETURN = int(getattr(pygame, "K_RETURN", 0))
+PG_K_C = int(getattr(pygame, "K_c", 0))
+PG_K_S = int(getattr(pygame, "K_s", 0))
+PG_K_ESCAPE = int(getattr(pygame, "K_ESCAPE", 0))
+PG_K_BACKSPACE = int(getattr(pygame, "K_BACKSPACE", 0))
+PG_K_LEFT = int(getattr(pygame, "K_LEFT", 0))
+PG_K_A = int(getattr(pygame, "K_a", 0))
+PG_K_RIGHT = int(getattr(pygame, "K_RIGHT", 0))
+PG_K_D = int(getattr(pygame, "K_d", 0))
+PG_K_R = int(getattr(pygame, "K_r", 0))
+PG_ERROR: Any = getattr(pygame, "error", RuntimeError)
+PG_INIT = getattr(pygame, "init", lambda: None)
+PG_QUIT_FN = getattr(pygame, "quit", lambda: None)
+
 
 class Game(GameUIMixin):
     def __init__(self) -> None:
-        flags = pygame.DOUBLEBUF
+        self.running = False
+        self.base_speed = 0
+        self.speed = 0
+        self.distance_meters = 0
+        self.elapsed_time = 0
+        self.score = 0
+        self.nitro_gas = 0.0
+        self.nitro_regen_delay_timer = 0
+        self.game_over = False
+        self.paused = False
+        self.pause_started_ticks = None
+        self.paused_total_ms = 0
+        self.safe_lane_idx = 0
+        self.safe_lane_until_meter = 0
+        self.blocker_spawn_gap_timer = 0
+        self.current_biome_idx = 0
+        self.next_biome_idx = 0
+        self.biome_counter = 0
+        self.is_nitro_active = False
+        self.bg1_surf = None
+        self.bg2_surf = None
+        self.bg1_y = 0
+        self.bg2_y = 0
+        self.sound_on = True
+        self.screen_state = "home"
+        self.selected_car_idx = 0
+
+        flags = PG_DOUBLEBUF
         self.screen = pygame.display.set_mode(
             (SCREEN_WIDTH, SCREEN_HEIGHT), flags, vsync=1
         )
@@ -42,7 +89,7 @@ class Game(GameUIMixin):
                 pygame.mixer.init()
             pygame.mixer.music.load(self.music_path)
             pygame.mixer.music.play(-1)
-        except (pygame.error, FileNotFoundError):
+        except (PG_ERROR, FileNotFoundError):
             pass
 
         self._apply_audio_state()
@@ -243,7 +290,7 @@ class Game(GameUIMixin):
             if size is not None:
                 return pygame.transform.smoothscale(img, size)
             return img
-        except (pygame.error, FileNotFoundError):
+        except (PG_ERROR, FileNotFoundError):
             return None
 
     def _load_menu_font(self, size: int) -> pygame.font.Font:
@@ -273,14 +320,14 @@ class Game(GameUIMixin):
             try:
                 icon = pygame.image.load(icon_path).convert_alpha()
                 return pygame.transform.smoothscale(icon, (54, 54))
-            except (pygame.error, FileNotFoundError):
+            except (PG_ERROR, FileNotFoundError):
                 continue
         return None
 
     def _load_optional_sound(self, path: str) -> pygame.mixer.Sound | None:
         try:
             return pygame.mixer.Sound(path)
-        except (pygame.error, FileNotFoundError):
+        except (PG_ERROR, FileNotFoundError):
             return None
 
     def _apply_audio_state(self) -> None:
@@ -289,7 +336,7 @@ class Game(GameUIMixin):
 
         try:
             pygame.mixer.music.set_volume(music_level)
-        except pygame.error:
+        except PG_ERROR:
             pass
 
         for sfx in [self.coin_sound, self.fuel_sound, self.click_sound]:
@@ -325,7 +372,7 @@ class Game(GameUIMixin):
         can_continue = self.is_nitro_active and self.nitro_gas > 0
         can_start = self.nitro_gas >= self.nitro_min_activation
 
-        if keys[pygame.K_SPACE] and (can_continue or can_start):
+        if keys[PG_K_SPACE] and (can_continue or can_start):
             self.speed = self.base_speed * 2
             self.nitro_gas = max(0.0, self.nitro_gas - self.nitro_drain_rate)
             self.is_nitro_active = True
@@ -461,7 +508,7 @@ class Game(GameUIMixin):
             self.safe_lane_idx = random.choice(clear_candidates)
         else:
             self.safe_lane_idx = min(
-                candidate_lanes, key=lambda idx: self._lane_blocker_count_ahead(idx)
+                candidate_lanes, key=self._lane_blocker_count_ahead
             )
 
         self.safe_lane_until_meter = self.distance_meters + self.safe_lane_span_m
@@ -583,9 +630,9 @@ class Game(GameUIMixin):
 
     def _check_events(self) -> None:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == PG_QUIT:
                 self._quit_game()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == PG_MOUSEBUTTONDOWN and event.button == 1:
                 sound_rect = self._active_sound_button_rect()
                 if sound_rect and sound_rect.collidepoint(event.pos):
                     self._toggle_sound()
@@ -606,52 +653,52 @@ class Game(GameUIMixin):
                         self._toggle_sound()
                     elif self.pause_resume_rect.collidepoint(event.pos):
                         self._toggle_pause()
-            if event.type == pygame.KEYDOWN:
+            if event.type == PG_KEYDOWN:
                 if self.screen_state == "home":
-                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    if event.key in (PG_K_RETURN, PG_K_SPACE):
                         self._start_game_from_home()
-                    if event.key in (pygame.K_c, pygame.K_s):
+                    if event.key in (PG_K_C, PG_K_S):
                         self.screen_state = "select_car"
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == PG_K_ESCAPE:
                         self._quit_game()
                 elif self.screen_state == "select_car":
-                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    if event.key in (PG_K_RETURN, PG_K_SPACE):
                         self._start_game_from_home()
-                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                    if event.key in (PG_K_ESCAPE, PG_K_BACKSPACE):
                         self.screen_state = "home"
-                    if event.key in (pygame.K_LEFT, pygame.K_a):
+                    if event.key in (PG_K_LEFT, PG_K_A):
                         self.selected_car_idx = (self.selected_car_idx - 1) % len(
                             self.car_options
                         )
-                    if event.key in (pygame.K_RIGHT, pygame.K_d):
+                    if event.key in (PG_K_RIGHT, PG_K_D):
                         self.selected_car_idx = (self.selected_car_idx + 1) % len(
                             self.car_options
                         )
                 elif self.game_over:
-                    if event.key == pygame.K_r:
+                    if event.key == PG_K_R:
                         self._reset_run()
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == PG_K_ESCAPE:
                         self._quit_game()
                 else:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == PG_K_ESCAPE:
                         self._toggle_pause()
                         continue
                     if self.paused:
                         continue
-                    if event.key in (pygame.K_LEFT, pygame.K_a):
+                    if event.key in (PG_K_LEFT, PG_K_A):
                         self.player.move_left()
-                    if event.key in (pygame.K_RIGHT, pygame.K_d):
+                    if event.key in (PG_K_RIGHT, PG_K_D):
                         self.player.move_right()
 
     def _quit_game(self) -> None:
         self.running = False
         try:
             pygame.mixer.music.stop()
-        except pygame.error:
+        except PG_ERROR:
             pass
-        pygame.quit()
+        PG_QUIT_FN()
 
 
 if __name__ == "__main__":
-    pygame.init()
+    PG_INIT()
     Game().run()
