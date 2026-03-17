@@ -928,23 +928,46 @@ class Game:
         self.screen_state = "home"
 
     def _draw_hud(self) -> None:
-        box = pygame.Surface((180, 105), pygame.SRCALPHA)
-        box.fill((0, 0, 0, 180))
-        self.screen.blit(box, (10, 20))
+        hud_rect = pygame.Rect(12, 18, 158, 118)
+        hud_panel = pygame.Surface((hud_rect.width, hud_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(
+            hud_panel,
+            (10, 10, 14, 188),
+            (0, 0, hud_rect.width, hud_rect.height),
+            border_radius=16,
+        )
+        pygame.draw.rect(
+            hud_panel,
+            (255, 230, 120, 165),
+            (0, 0, hud_rect.width, hud_rect.height),
+            2,
+            border_radius=16,
+        )
+        self.screen.blit(hud_panel, hud_rect.topleft)
+
+        hud_glow = pygame.Surface(
+            (hud_rect.width + 8, hud_rect.height + 8), pygame.SRCALPHA
+        )
+        pygame.draw.rect(
+            hud_glow,
+            (255, 220, 90, 42),
+            (0, 0, hud_rect.width + 8, hud_rect.height + 8),
+            4,
+            border_radius=18,
+        )
+        self.screen.blit(hud_glow, (hud_rect.x - 4, hud_rect.y - 4))
+
         stats = [
             f"{self.distance_meters} m",
             f"Coins: {self.score}",
             f"Time: {self.elapsed_time}s",
+            f"Biome: {self.biome_counter}",
         ]
         for i, text in enumerate(stats):
-            self.screen.blit(self.font.render(text, True, WHITE), (20, 30 + i * 25))
-
-        biome_box = pygame.Surface((190, 48), pygame.SRCALPHA)
-        biome_box.fill((0, 0, 0, 165))
-        biome_box_pos = (SCREEN_WIDTH - 280, 20)
-        self.screen.blit(biome_box, biome_box_pos)
-        biome_txt = self.font.render(f"Biome: {self.biome_counter}", True, WHITE)
-        self.screen.blit(biome_txt, (SCREEN_WIDTH - 270, 32))
+            self.screen.blit(
+                self.font.render(text, True, WHITE),
+                (hud_rect.x + 12, hud_rect.y + 10 + i * 25),
+            )
 
         center = (SCREEN_WIDTH - 82, SCREEN_HEIGHT - 98)
         radius = 44
