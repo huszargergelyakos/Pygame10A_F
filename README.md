@@ -21,6 +21,9 @@ The goal is simple: stay alive as long as possible, travel the greatest distance
 - **Left Arrow / A**: Move one lane to the left
 - **Right Arrow / D**: Move one lane to the right
 - **Space**: Use Nitro (Speed boost)
+- **ESC**: Pause / Resume during gameplay
+- **Top-right Menu button (mouse click)**: Open pause menu
+- **Pause menu buttons**: Restart run / Go Home / Sound On-Off / Resume
 
 ## Creators & Contributors
 - **Creator:** Huszár Gergely Ákos
