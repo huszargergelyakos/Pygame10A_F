@@ -1,13 +1,12 @@
-import pygame
 import random
 from pathlib import Path
+import pygame
 from settings import SCREEN_HEIGHT, LANE_POSITIONS
 
 
 class BaseObject(pygame.sprite.Sprite):
     def __init__(self, image_path: str, scale_size: tuple, lane_idx: int):
         super().__init__()
-        # Kép betöltése és skálázása
         img = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(img, scale_size)
         self.rect = self.image.get_rect()
@@ -24,7 +23,6 @@ class BaseObject(pygame.sprite.Sprite):
 
 class Obstacle(BaseObject):
     def __init__(self, type_name: str, lane_idx: int):
-        # Mappa: assets/obstacles/
         path = f"Assets/obstacles/{type_name}.png"
         if type_name == "barrel":
             super().__init__(path, (56, 112), lane_idx)
@@ -35,7 +33,6 @@ class Obstacle(BaseObject):
 
 class Fuel(BaseObject):
     def __init__(self, lane_idx: int):
-        # Mappa: assets/collectibles/ (kis c!)
         super().__init__("Assets/collectibles/fuel.png", (42, 54), lane_idx)
 
 
@@ -54,8 +51,6 @@ class Enemy(BaseObject):
 
         if candidates:
             return random.choice(candidates)
-
-        # Fallback, ha nincs meg az enemy mappa vagy a fajlok.
         return "Assets/cars/1.png"
 
 
@@ -63,7 +58,6 @@ class Coin(pygame.sprite.Sprite):
     def __init__(self, lane_idx: int):
         super().__init__()
         self.frames = []
-        # Mappa: assets/coins/ (kis c!)
         for i in range(1, 7):
             img = pygame.image.load(f"Assets/coins/{i}.png").convert_alpha()
             self.frames.append(pygame.transform.scale(img, (60, 60)))

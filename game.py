@@ -11,7 +11,7 @@ from settings import (
 )
 from road import Road
 from player import Player
-from objects import Obstacle, Coin, Fuel, Enemy  # Új import: Enemy
+from objects import Obstacle, Coin, Fuel, Enemy
 
 
 class Game:
@@ -111,7 +111,6 @@ class Game:
                 pygame.transform.smoothscale(car_img, (170, 320))
             )
 
-        # Pause panel elemek
         panel_w, panel_h = 360, 340
         panel_x = (SCREEN_WIDTH - panel_w) // 2
         panel_y = (SCREEN_HEIGHT - panel_h) // 2
@@ -218,7 +217,7 @@ class Game:
         self.obstacles = pygame.sprite.Group()
         self.coins = pygame.sprite.Group()
         self.fuels = pygame.sprite.Group()
-        self.enemies = pygame.sprite.Group()  # Új csoport
+        self.enemies = pygame.sprite.Group()
 
         self.bg1_surf = self.bg_surfaces[0]
         self.bg2_surf = self.bg_surfaces[0]
@@ -360,7 +359,6 @@ class Game:
 
     def _spawn_in_lane(self, lane_idx: int) -> None:
         if lane_idx == self.safe_lane_idx:
-            # A safe lane-en nem spawnolhat blocker vagy enemy a következő 100m-en.
             safe_roll = random.random()
             if safe_roll < 0.30:
                 self.coins.add(Coin(lane_idx))
@@ -414,11 +412,9 @@ class Game:
             self.lane_cooldowns[lane_idx] = self._scaled_cooldown(60, 170, difficulty)
 
     def _distance_difficulty(self) -> float:
-        # 0.0 -> indulás, 1.0 -> kb 4000m után max nehézség.
         return min(1.0, self.distance_meters / 4000.0)
 
     def _scaled_cooldown(self, min_cd: int, max_cd: int, difficulty: float) -> int:
-        # Ahogy nő a nehézség, rövidebb cooldown -> gyakoribb spawn.
         scale = 1.0 - (0.35 * difficulty)
         scaled_min = max(35, int(min_cd * scale))
         scaled_max = max(scaled_min + 10, int(max_cd * scale))
@@ -445,7 +441,6 @@ class Game:
             idx for idx in clear_candidates if abs(idx - self.player.lane_idx) <= 1
         ]
 
-        # A safe lane soha ne maradjon ugyanaz, és lehetőleg ténylegesen tiszta legyen.
         if self.player.lane_idx in clear_candidates:
             self.safe_lane_idx = self.player.lane_idx
         elif adjacent_candidates:
@@ -453,7 +448,6 @@ class Game:
         elif clear_candidates:
             self.safe_lane_idx = random.choice(clear_candidates)
         else:
-            # Ha minden lane-ben van blocker, akkor a legkevésbé telítettből választunk.
             self.safe_lane_idx = min(
                 candidate_lanes, key=lambda idx: self._lane_blocker_count_ahead(idx)
             )
@@ -487,11 +481,9 @@ class Game:
         blocked_lanes = self._blocked_lanes_in_critical_window()
         blocked_after_spawn = blocked_lanes | {lane_idx}
 
-        # Kritikus zónában legfeljebb 2 lane legyen blokkolt.
         if len(blocked_after_spawn) > 2:
             return False
 
-        # Maradjon legalább egy a játékos számára gyorsan elérhető lane.
         reachable_lanes = {
             idx
             for idx in range(len(LANE_POSITIONS))
@@ -516,13 +508,12 @@ class Game:
         self.coins.update(self.speed)
         self.fuels.update(self.speed)
         prev_enemies = set(self.enemies.sprites())
-        self.enemies.update(self.speed + 2)  # Az ellenfelek picit gyorsabbak
+        self.enemies.update(self.speed + 2)
 
         gone_enemies = [enemy for enemy in prev_enemies if enemy not in self.enemies]
         self.cars_dodged += len(gone_enemies)
 
     def _check_collisions(self) -> None:
-        # Ütközés ellenséggel vagy akadállyal
         if pygame.sprite.spritecollide(
             self.player, self.obstacles, False, self._hitbox_collide
         ) or pygame.sprite.spritecollide(
@@ -735,7 +726,6 @@ class Game:
         hovered: bool,
         text_size: int = 38,
     ) -> None:
-        # Vágott sarkú, fényes keret a képen látható "box" stílushoz.
         alpha_fill = 120 if hovered else 85
         fill_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
 
@@ -818,7 +808,6 @@ class Game:
         self.screen.blit(text, text.get_rect(center=rect.center))
 
     def _draw_select_preview_panel(self, rect: pygame.Rect) -> None:
-        # Szelidebb, lekerekitett panel a kivagott sarku valtozat helyett.
         panel_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
         panel_rect = panel_surf.get_rect()
         pygame.draw.rect(panel_surf, (24, 10, 38, 168), panel_rect, border_radius=20)
@@ -835,7 +824,6 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         hovered = rect.collidepoint(mouse_pos)
 
-        # Ugyanaz a transzparencia-érzet, mint a HUD counter panelen.
         fill_col = (10, 10, 14, 205 if hovered else 188)
         border_col = (170, 230, 255)
         pygame.draw.rect(self.screen, fill_col, rect, border_radius=13)
