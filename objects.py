@@ -5,7 +5,7 @@ from settings import SCREEN_HEIGHT, LANE_POSITIONS
 
 
 class BaseObject(pygame.sprite.Sprite):
-    def __init__(self, image_path: str, scale_size: tuple, lane_idx: int):
+    def __init__(self, image_path: str, scale_size: tuple[int, int], lane_idx: int):
         super().__init__()
         img = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(img, scale_size)
@@ -57,7 +57,7 @@ class Enemy(BaseObject):
 class Coin(pygame.sprite.Sprite):
     def __init__(self, lane_idx: int):
         super().__init__()
-        self.frames = []
+        self.frames: list[pygame.Surface] = []
         for i in range(1, 7):
             img = pygame.image.load(f"Assets/coins/{i}.png").convert_alpha()
             self.frames.append(pygame.transform.scale(img, (60, 60)))

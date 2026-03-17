@@ -2,6 +2,8 @@ import math
 import pygame
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE
 
+SRCALPHA = int(getattr(pygame, "SRCALPHA", 0))
+
 
 class GameUIMixin:
     def _draw(self) -> None:
@@ -39,7 +41,7 @@ class GameUIMixin:
         else:
             self.screen.fill((22, 20, 40))
 
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
         overlay.fill((0, 0, 0, 70))
         self.screen.blit(overlay, (0, 0))
 
@@ -103,7 +105,7 @@ class GameUIMixin:
         else:
             self.screen.fill((22, 20, 40))
 
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
         overlay.fill((0, 0, 0, 92))
         self.screen.blit(overlay, (0, 0))
 
@@ -172,7 +174,7 @@ class GameUIMixin:
         text_size: int = 38,
     ) -> None:
         alpha_fill = 120 if hovered else 85
-        fill_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        fill_surf = pygame.Surface((rect.width, rect.height), SRCALPHA)
 
         cut = 10
         local_pts = [
@@ -201,7 +203,7 @@ class GameUIMixin:
             (rect.left, rect.top + cut),
         ]
 
-        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
         pygame.draw.polygon(glow_surf, glow_col, pts, 4)
         self.screen.blit(glow_surf, (0, 0))
         pygame.draw.polygon(self.screen, border_col, pts, 2)
@@ -219,7 +221,7 @@ class GameUIMixin:
         border_color: tuple[int, int, int],
         glow_color: tuple[int, int, int, int],
     ) -> None:
-        fill_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        fill_surf = pygame.Surface((rect.width, rect.height), SRCALPHA)
         cut = 10
         local_pts = [
             (cut, 0),
@@ -244,7 +246,7 @@ class GameUIMixin:
             (rect.left, rect.bottom - cut),
             (rect.left, rect.top + cut),
         ]
-        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        glow_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
         pygame.draw.polygon(glow_surf, glow_color, pts, 4)
         self.screen.blit(glow_surf, (0, 0))
         pygame.draw.polygon(self.screen, border_color, pts, 2)
@@ -253,7 +255,7 @@ class GameUIMixin:
         self.screen.blit(text, text.get_rect(center=rect.center))
 
     def _draw_select_preview_panel(self, rect: pygame.Rect) -> None:
-        panel_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+        panel_surf = pygame.Surface(rect.size, SRCALPHA)
         panel_rect = panel_surf.get_rect()
         pygame.draw.rect(panel_surf, (24, 10, 38, 168), panel_rect, border_radius=20)
         pygame.draw.rect(panel_surf, (40, 18, 66, 120), panel_rect, 2, border_radius=20)
@@ -302,7 +304,7 @@ class GameUIMixin:
         self.screen.blit(menu_text, text_rect)
 
     def _draw_pause_overlay(self) -> None:
-        panel = pygame.Surface(self.pause_panel_rect.size, pygame.SRCALPHA)
+        panel = pygame.Surface(self.pause_panel_rect.size, SRCALPHA)
         pygame.draw.rect(panel, (10, 10, 14, 196), panel.get_rect(), border_radius=24)
         pygame.draw.rect(panel, (205, 215, 235), panel.get_rect(), 3, border_radius=24)
         self.screen.blit(panel, self.pause_panel_rect.topleft)
@@ -380,7 +382,7 @@ class GameUIMixin:
             self.screen.blit(icon, btn_rect)
             return
 
-        fallback = pygame.Surface(btn_rect.size, pygame.SRCALPHA)
+        fallback = pygame.Surface(btn_rect.size, SRCALPHA)
         fallback.fill((0, 0, 0, 120))
         self.screen.blit(fallback, btn_rect.topleft)
         pygame.draw.rect(self.screen, WHITE, btn_rect, 2)
@@ -391,7 +393,7 @@ class GameUIMixin:
         if self.game_over_main_bg:
             self.screen.blit(self.game_over_main_bg, (0, 0))
 
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
         overlay.fill((0, 0, 0, 95))
         self.screen.blit(overlay, (0, 0))
 
@@ -502,7 +504,7 @@ class GameUIMixin:
 
     def _draw_hud(self) -> None:
         hud_rect = pygame.Rect(12, 18, 158, 118)
-        hud_panel = pygame.Surface((hud_rect.width, hud_rect.height), pygame.SRCALPHA)
+        hud_panel = pygame.Surface((hud_rect.width, hud_rect.height), SRCALPHA)
         pygame.draw.rect(
             hud_panel,
             (10, 10, 14, 188),
@@ -518,9 +520,7 @@ class GameUIMixin:
         )
         self.screen.blit(hud_panel, hud_rect.topleft)
 
-        hud_glow = pygame.Surface(
-            (hud_rect.width + 8, hud_rect.height + 8), pygame.SRCALPHA
-        )
+        hud_glow = pygame.Surface((hud_rect.width + 8, hud_rect.height + 8), SRCALPHA)
         pygame.draw.rect(
             hud_glow,
             (150, 220, 255, 42),
@@ -544,12 +544,12 @@ class GameUIMixin:
 
         center = (SCREEN_WIDTH - 82, SCREEN_HEIGHT - 98)
         radius = 44
-        gauge_bg = pygame.Surface((130, 130), pygame.SRCALPHA)
+        gauge_bg = pygame.Surface((130, 130), SRCALPHA)
         pygame.draw.circle(gauge_bg, (0, 0, 0, 165), (65, 65), 57)
         self.screen.blit(gauge_bg, (center[0] - 65, center[1] - 65))
 
         if self.is_nitro_active:
-            glow_surf = pygame.Surface((170, 170), pygame.SRCALPHA)
+            glow_surf = pygame.Surface((170, 170), SRCALPHA)
             pulse = 85 + int(40 * (1 + math.sin(pygame.time.get_ticks() * 0.02)) / 2)
             pygame.draw.circle(glow_surf, (255, 140, 0, pulse), (85, 85), 62, 16)
             pygame.draw.circle(glow_surf, (255, 170, 60, pulse // 2), (85, 85), 70, 10)

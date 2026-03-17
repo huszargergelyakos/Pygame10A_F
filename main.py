@@ -1,9 +1,12 @@
+# type: ignore
 import pygame
 from game import Game
 
+PG_INIT = getattr(pygame, "init", lambda: None)
+
 
 def main() -> None:
-    pygame.init()
+    PG_INIT()
     Game().run()
 
 
