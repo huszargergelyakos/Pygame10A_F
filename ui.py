@@ -9,10 +9,9 @@ class Button:
         height = int(img.get_height() * scale)
         self.image = pygame.transform.scale(img, (width, height))
         self.rect = self.image.get_rect(center=(x, y))
-        self.clicked: bool = False
+        self.clicked = False
 
     def draw(self, screen: pygame.Surface) -> bool:
-        """Kirajzolja a gombot és jelzi, ha rákattintottak."""
         action = False
         pos = pygame.mouse.get_pos()
 
@@ -33,7 +32,6 @@ class HUD:
         self.font = pygame.font.SysFont("Arial", font_size, bold=True)
 
     def draw_stat(self, screen: pygame.Surface, score: int, fuel: int) -> None:
-        """Megjeleníti a pontszámot és az üzemanyagot."""
         score_surf = self.font.render(f"SCORE: {score}", True, WHITE)
         fuel_surf = self.font.render(
             f"FUEL: {fuel}%", True, YELLOW if fuel > 20 else (255, 0, 0)
