@@ -84,7 +84,7 @@ class GameUIMixin:
             rect=title_rect,
             label=title_text,
             text_size=56,
-            fill_color=(38, 18, 72, 192),
+            fill_color=(45, 18, 72, 192),
             border_color=(162, 128, 245),
             glow_color=(162, 128, 245, 70),
         )
@@ -94,9 +94,9 @@ class GameUIMixin:
             rect=self.home_selected_rect,
             label=label,
             text_size=24,
-            fill_color=(45, 14, 40, 170),
-            border_color=(255, 160, 210),
-            glow_color=(255, 160, 210, 55),
+            fill_color=(50, 14, 40, 170),
+            border_color=(255, 150, 210),
+            glow_color=(255, 150, 210, 55),
         )
 
     def _draw_select_car(self) -> None:
