@@ -1,4 +1,3 @@
-# type: ignore
 import pygame
 from game import Game
 
