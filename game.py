@@ -185,7 +185,7 @@ class Game(GameUIMixin):
         )
 
     def _init_variables(self) -> None:
-        self.running, self.base_speed = True, 6
+        self.running, self.base_speed = True, 5
         self.speed = self.base_speed
         self.distance_meters, self.elapsed_time = 0, 0
         self.score, self.nitro_gas = 0, 0.0
