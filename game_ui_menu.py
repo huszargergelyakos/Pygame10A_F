@@ -120,13 +120,13 @@ class GameUIMenuMixin:
             self.select_play_rect,
             "PLAY",
             self.select_play_rect.collidepoint(mouse_pos),
-            text_size=34,
+            text_size=36,
         )
         self._draw_menu_box(
             self.select_back_rect,
             "BACK",
             self.select_back_rect.collidepoint(mouse_pos),
-            text_size=34,
+            text_size=36,
         )
 
         if click_started and self.select_play_rect.collidepoint(mouse_pos):
@@ -141,7 +141,7 @@ class GameUIMenuMixin:
         rect: pygame.Rect,
         label: str,
         hovered: bool,
-        text_size: int = 38,
+        text_size: int = 40,
     ) -> None:
         alpha_fill = 120 if hovered else 85
         fill_surf = pygame.Surface((rect.width, rect.height), SRCALPHA)
