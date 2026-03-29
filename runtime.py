@@ -1,9 +1,10 @@
-# type: ignore
 import random
 import pygame
-from settings import SCREEN_HEIGHT, FPS, DISTANCE_PER_BIOME, LANE_POSITIONS
-from objects import Obstacle, Coin, Fuel, Enemy
-from game_compat import (
+from settings import (
+    FPS,
+    LANE_POSITIONS,
+    DISTANCE_PER_BIOME,
+    SCREEN_HEIGHT,
     PG_K_A,
     PG_K_BACKSPACE,
     PG_K_C,
@@ -21,6 +22,7 @@ from game_compat import (
     PG_ERROR,
     PG_QUIT_FN,
 )
+from objects import Obstacle, Coin, Fuel, Enemy
 
 
 class GameRuntimeMixin:
@@ -32,6 +34,7 @@ class GameRuntimeMixin:
     start_ticks = 0
     paused_total_ms = 0
     biome_counter = 0
+    blocker_spawn_gap_timer = 0
 
     def run(self) -> None:
         while self.running:
@@ -110,7 +113,6 @@ class GameRuntimeMixin:
 
     def _handle_nitro(self) -> None:
         keys = pygame.key.get_pressed()
-
         can_continue = self.is_nitro_active and self.nitro_gas > 0
         can_start = self.nitro_gas >= self.nitro_min_activation
 

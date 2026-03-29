@@ -1,8 +1,8 @@
 # type: ignore
-from game_compat import PG_INIT
-from game_setup import GameSetupMixin
-from game_runtime import GameRuntimeMixin
-from game_ui import GameUIMixin
+from settings import PG_INIT
+from setup import GameSetupMixin
+from runtime import GameRuntimeMixin
+from ui import GameUIMixin
 
 
 class Game(GameUIMixin, GameRuntimeMixin, GameSetupMixin):
