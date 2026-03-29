@@ -26,7 +26,7 @@ from objects import Obstacle, Coin, Fuel, Enemy
 
 
 class GameRuntimeMixin:
-    # Itt tároljuk a futás közbeni állapotokat, hogy minden metódus elérje.
+    # Itt vannak a játék közben változó adatok.
     distance_meters = 0
     safe_lane_until_meter = 0
     safe_lane_span_m = 0
@@ -39,9 +39,8 @@ class GameRuntimeMixin:
 
     # Fő ciklus
     def run(self) -> None:
-        # A játék fő ciklusa: amíg a self.running igaz, addig fut a játék.
-        # Minden kör egy frame-nek felel meg.
-        # A sorrend: események -> logikai frissítés -> rajzolás -> FPS limit.
+        # Ez a játék fő ismétlődő része.
+        # Amíg fut a játék, ezt újra és újra végrehajtjuk.
         while self.running:
             self._check_events()
             if (
@@ -56,13 +55,12 @@ class GameRuntimeMixin:
 
     # Bemenet és eseménykezelés
     def _check_events(self) -> None:
-        # Ez a függvény olvassa ki és dolgozza fel az összes felhasználói eseményt.
-        # Ide tartozik az egérkattintás, a billentyűlenyomás és a bezárás.
+        # Itt kezeljük a kattintást, a billentyűket és a kilépést.
         for event in pygame.event.get():
             if event.type == PG_QUIT:
                 self._quit_game()
 
-            # Egéres UI akciók (hang gomb, pause panel gombok).
+            # Egér kattintásos részek.
             if event.type == PG_MOUSEBUTTONDOWN and event.button == 1:
                 sound_rect = self._active_sound_button_rect()
                 if sound_rect and sound_rect.collidepoint(event.pos):
@@ -85,7 +83,7 @@ class GameRuntimeMixin:
                     elif self.pause_resume_rect.collidepoint(event.pos):
                         self._toggle_pause()
 
-            # Billentyű akciók az aktuális képernyő állapot szerint.
+            # Billentyűs részek.
             if event.type == PG_KEYDOWN:
                 if self.screen_state == "home":
                     if event.key in (PG_K_RETURN, PG_K_SPACE):
@@ -125,8 +123,8 @@ class GameRuntimeMixin:
 
     # Frame szintű szimuláció
     def _handle_nitro(self) -> None:
-        # A nitro működése: szóközre gyorsít, közben fogy az üzemanyag.
-        # Ha elfogy a nitro, automatikusan visszaáll alap sebességre.
+        # Szóköznél gyorsítunk, és közben fogy a nitro.
+        # Ha elfogy, visszaáll a normál sebesség.
         keys = pygame.key.get_pressed()
         can_continue = self.is_nitro_active and self.nitro_gas > 0
         can_start = self.nitro_gas >= self.nitro_min_activation
@@ -144,9 +142,9 @@ class GameRuntimeMixin:
             self.is_nitro_active = False
 
     def _update(self) -> None:
-        # Egy teljes logikai frissítés menete.
-        # Itt minden mozgás, spawn, ütközés, háttér és stat frissül.
-        # Késés időzítők szabályozzák a nitro regen-t és a blocker spawn ritmust.
+        # Egy körben minden mozgó adatot frissítünk.
+        # Itt megy a mozgás, új tárgyak létrehozása, ütközés, háttér és pontok.
+        # Várakozási idők kezelése.
         if self.nitro_regen_delay_timer > 0:
             self.nitro_regen_delay_timer -= 1
         if self.blocker_spawn_gap_timer > 0:
@@ -163,10 +161,10 @@ class GameRuntimeMixin:
         self._scroll_background()
         self._update_stats()
 
-    # Spawnolás és nehézségi logika
+    # Új tárgyak megjelenése
     def _handle_spawning(self) -> None:
-        # Végigmegy mind a 4 sávon.
-        # Ha egy sáv cooldownja lejárt, új objektumot próbál spawnolni.
+        # Végigmegyünk a sávokon.
+        # Ha letelt az idő, jöhet új tárgy.
         self._refresh_safe_lane_if_needed()
         for i in range(4):
             self.lane_cooldowns[i] -= self.speed
@@ -174,10 +172,10 @@ class GameRuntimeMixin:
                 self._spawn_in_lane(i)
 
     def _spawn_in_lane(self, lane_idx: int) -> None:
-        # Egyetlen sáv spawn döntése.
-        # A nehézség és a véletlen együtt dönti el, mi jelenjen meg a sávban.
+        # Eldöntjük, mi jelenjen meg ebben a sávban.
+        # Ebben benne van a véletlen is.
         if lane_idx == self.safe_lane_idx:
-            # Safe lane-ben inkább pickupok jelennek meg, hogy legyen menekülő út.
+            # A biztonságos sávban inkább segítő tárgyak jönnek.
             safe_roll = random.random()
             if safe_roll < 0.30:
                 self.coins.add(Coin(lane_idx))
@@ -190,14 +188,14 @@ class GameRuntimeMixin:
             return
 
         difficulty = self._distance_difficulty()
-        # A distance növekedésével nő az ellenfelek/akadályok esélye.
+        # Ahogy megyünk előre, nehezebb lesz a játék.
         enemy_threshold = 0.09 + (0.16 * difficulty)
         obstacle_threshold = enemy_threshold + (0.09 + (0.20 * difficulty))
 
         r = random.random()
         can_spawn_blocker_now = self.blocker_spawn_gap_timer == 0
 
-        # Spawn sorrend: ellenfelek/akadályok, aztán pickupok, különben csak cooldown.
+        # Döntés, hogy mi jöjjön: ellenfél, akadály vagy segítő tárgy.
         if r < enemy_threshold:
             if self._can_spawn_blocker_in_lane(lane_idx) and can_spawn_blocker_now:
                 self.enemies.add(Enemy(lane_idx))
@@ -241,25 +239,25 @@ class GameRuntimeMixin:
             self.lane_cooldowns[lane_idx] = self._scaled_cooldown(60, 170, difficulty)
 
     def _distance_difficulty(self) -> float:
-        # A megtett távolságból számol egy 0.0-1.0 közti nehézségi értéket.
+        # A megtett útból számolunk egy nehézség értéket.
         return min(1.0, self.distance_meters / 4000.0)
 
     def _scaled_cooldown(self, min_cd: int, max_cd: int, difficulty: float) -> int:
-        # Nehezebb játéknál rövidebb cooldown jön ki, így gyakoribb lesz a spawn.
+        # Nehezebb játéknál rövidebb várakozási időt ad.
         scale = 1.0 - (0.35 * difficulty)
         scaled_min = max(35, int(min_cd * scale))
         scaled_max = max(scaled_min + 10, int(max_cd * scale))
         return random.randint(scaled_min, scaled_max)
 
     def _lane_from_x(self, x_pos: int) -> int:
-        # Egy x koordinátához megkeresi a legközelebbi sávot.
+        # Megmondja, melyik sáv van legközelebb az adott x ponthoz.
         return min(
             range(len(LANE_POSITIONS)), key=lambda idx: abs(LANE_POSITIONS[idx] - x_pos)
         )
 
     def _refresh_safe_lane_if_needed(self) -> None:
-        # Bizonyos távolságonként új safe lane-t választunk.
-        # Cél: legyen legalább egy ésszerű menekülő út a játékosnak.
+        # Néha új biztonságos sávot választunk.
+        # Így marad esély kikerülni az akadályokat.
         if self.distance_meters < self.safe_lane_until_meter:
             return
 
@@ -289,7 +287,7 @@ class GameRuntimeMixin:
         self.safe_lane_until_meter = self.distance_meters + self.safe_lane_span_m
 
     def _lane_blocker_count_ahead(self, lane_idx: int) -> int:
-        # Megszámolja, mennyi veszélyes objektum van a játékos előtt egy adott sávban.
+        # Megszámolja, mennyi veszélyes dolog van egy sávban előttünk.
         top_limit = self.player.rect.top - self.safe_lane_clear_px
         bottom_limit = self.player.rect.bottom + 80
         count = 0
@@ -304,8 +302,8 @@ class GameRuntimeMixin:
         return count
 
     def _obstacle_count_in_window(self) -> int:
-        # Egy szűkebb tartományban akadálydarabszámot ad vissza.
-        # Ezzel megakadályozzuk, hogy túl sok akadály torlódjon egyszerre.
+        # Megszámolja a közeli akadályokat.
+        # Ezzel elkerüljük, hogy túl sok legyen egyszerre.
         top_limit = self.player.rect.top - self.obstacle_window_px
         bottom_limit = self.player.rect.top
         count = 0
@@ -315,7 +313,7 @@ class GameRuntimeMixin:
         return count
 
     def _can_spawn_blocker_in_lane(self, lane_idx: int) -> bool:
-        # Fair ellenőrzés: ha ide spawnolunk, marad-e még bejárható sáv.
+        # Ellenőrzi, hogy marad-e még járható sáv.
         blocked_lanes = self._blocked_lanes_in_critical_window()
         blocked_after_spawn = blocked_lanes | {lane_idx}
 
@@ -331,7 +329,7 @@ class GameRuntimeMixin:
         return len(free_reachable) > 0
 
     def _blocked_lanes_in_critical_window(self) -> set[int]:
-        # Összegyűjti, mely sávok foglaltak a játékos körüli veszélyzónában.
+        # Összegyűjti, melyik sávok vannak tele veszéllyel.
         blocked_lanes: set[int] = set()
         danger_top = self.player.rect.top - self.critical_window_px
         danger_bottom = self.player.rect.bottom + 120
@@ -344,8 +342,8 @@ class GameRuntimeMixin:
 
     # Objektum frissítés és ütközések
     def _update_groups(self) -> None:
-        # Minden sprite csoport frissítése.
-        # Az enemy-k közül számoljuk, mennyi tűnt el a képernyőről (kikerültek).
+        # Frissítjük az összes csoportot.
+        # Számoljuk, hány ellenség ment ki a képről.
         self.obstacles.update(self.speed)
         self.coins.update(self.speed)
         self.fuels.update(self.speed)
@@ -356,11 +354,10 @@ class GameRuntimeMixin:
         self.cars_dodged += len(gone_enemies)
 
     def _check_collisions(self) -> None:
-        # Ütközések kezelése három esetre:
-        # 1) akadály/ellenfél: game over
-        # 2) coin: pont nő
-        # 3) fuel: nitro töltődik
-        # Bármilyen blocker találat azonnal véget vet a futásnak.
+        # Ütközések kezelése.
+        # Ha akadályba megyünk: vége a körnek.
+        # Ha pénzt veszünk fel: nő a pont.
+        # Ha benzint veszünk fel: nő a nitro.
         if pygame.sprite.spritecollide(
             self.player, self.obstacles, False, self._hitbox_collide
         ) or pygame.sprite.spritecollide(
@@ -380,15 +377,15 @@ class GameRuntimeMixin:
     def _hitbox_collide(
         self, player_sprite: pygame.sprite.Sprite, obj_sprite: pygame.sprite.Sprite
     ) -> bool:
-        # Egyedi ütközésellenőrzés hitboxokkal.
-        # Ez pontosabb, mint a teljes kép téglalapjával számolni.
+        # Ütközést nézünk a kisebb találati dobozokkal.
         player_hitbox = getattr(player_sprite, "hitbox", player_sprite.rect)
         obj_hitbox = getattr(obj_sprite, "hitbox", obj_sprite.rect)
         return player_hitbox.colliderect(obj_hitbox)
 
     # Háttér görgetés és progresszió
     def _scroll_background(self) -> None:
-        # Két háttérkép váltva mozog lefelé, így folyamatos az útérzet.
+        # A két háttérkép lefele mozog.
+        # Ettől folyamatosnak látszik a haladás.
         self.bg1_y += self.speed
         self.bg2_y += self.speed
         if self.bg1_y >= SCREEN_HEIGHT:
@@ -399,8 +396,7 @@ class GameRuntimeMixin:
             self.bg2_surf = self.bg_surfaces[self.next_biome_idx]
 
     def _update_stats(self) -> None:
-        # Frissíti a fő statisztikákat: megtett táv, eltelt idő, biome index.
-        # A távolság hajtja az idő/statisztika és biome progressziót.
+        # Frissíti az adatokat: táv, idő, háttér számláló.
         self.distance_meters += self.speed // 2
         active_ms = pygame.time.get_ticks() - self.start_ticks - self.paused_total_ms
         self.elapsed_time = max(0, active_ms // 1000)
@@ -412,10 +408,10 @@ class GameRuntimeMixin:
             self.biome_counter += 1
         self.next_biome_idx = computed_idx
 
-    # Runtime állapot váltók
+    # Játék állapot váltás
     def _toggle_pause(self) -> None:
-        # Pause be/ki kapcsolása.
-        # Közben mérjük, mennyi idő telt pause-ban, hogy az időmérő korrekt maradjon.
+        # Szünet be/ki.
+        # Közben mérjük a szünet idejét.
         if self.screen_state != "playing" or self.game_over:
             return
         self.paused = not self.paused
@@ -426,7 +422,7 @@ class GameRuntimeMixin:
             self.pause_started_ticks = None
 
     def _quit_game(self) -> None:
-        # Kulturált kilépés: ciklus leáll, zene leáll, pygame bezár.
+        # Kilépés a játékból.
         self.running = False
         try:
             pygame.mixer.music.stop()

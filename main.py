@@ -4,10 +4,9 @@ from settings import PG_INIT
 
 # Elindítja a játékot: pygame init, majd fő ciklus.
 def main() -> None:
-    # Ez a program belépési pontja.
-    # 1) pygame indul
-    # 2) Game objektum létrejön
-    # 3) elindul a fő játékhurok
+    # Innen indul az egész program.
+    # Először beindítjuk a pygame-et.
+    # Utána elindítjuk a játékot.
     PG_INIT()
     Game().run()
 

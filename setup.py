@@ -13,10 +13,10 @@ from player import Player
 
 
 class GameSetupMixin:
-    # Inicializálás és kezdő állapot
+    # Kezdő beállítások
     def __init__(self) -> None:
-        # Ez fut le a játék létrehozásakor.
-        # Itt állítjuk be az alap változókat, az ablakot és minden induló komponenst.
+        # Ez fut le akkor, amikor a játék elindul.
+        # Itt készítjük elő az alap adatokat és az ablakot.
         self.running = False
         self.base_speed = 0
         self.speed = 0
@@ -54,10 +54,10 @@ class GameSetupMixin:
         self._init_variables()
         self._init_objects()
 
-    # Audio beállítások
+    # Hang beállítások
     def _init_audio_state(self) -> None:
-        # Hangrendszer induló állapot.
-        # Beállítja a hangerőket, betölti a zenét és az effekt hangokat.
+        # Beállítjuk a hangok hangerejét.
+        # Betöltjük a zenét és a rövid hangokat.
         self.sound_on = True
         self.music_volume = 0.35
         self.sfx_volume = 0.50
@@ -77,10 +77,10 @@ class GameSetupMixin:
 
         self._apply_audio_state()
 
-    # Menü és UI állapotok beállítása
+    # Menü képernyő beállítások
     def _init_menu_state(self) -> None:
-        # A menü képernyők összes téglalapja és képe itt készül el.
-        # Később a rajzoló kód már csak ezeket használja.
+        # Itt készülnek el a menü gombok helyei és képei.
+        # Később rajzolásnál ezeket használjuk.
         self.screen_state = "home"
         self.car_options = [f"Assets/cars/{i}.png" for i in range(1, 14)]
         self.selected_car_idx = 0
@@ -138,7 +138,7 @@ class GameSetupMixin:
         self._mouse_prev_down = False
 
         self.car_preview_surfaces: list[pygame.Surface] = []
-        # Előre skálázott preview képek, hogy rajzoláskor gyors legyen.
+        # Előre átméretezzük az autó képeket.
         for car_path in self.car_options:
             car_img = pygame.image.load(car_path).convert_alpha()
             self.car_preview_surfaces.append(
@@ -171,10 +171,9 @@ class GameSetupMixin:
             panel_x + 52, panel_y + 238, panel_w - 104, 68
         )
 
-    # Futás közbeni változók és játékállapot
+    # Játék közbeni adatok
     def _init_variables(self) -> None:
-        # Egy új kör induló adatai.
-        # Minden dinamikus érték visszaáll alapállapotba.
+        # Itt nullázzuk és beállítjuk az adatokat egy új körhöz.
         self.running, self.base_speed = True, 5
         self.speed = self.base_speed
         self.distance_meters, self.elapsed_time = 0, 0
@@ -204,7 +203,7 @@ class GameSetupMixin:
         self.game_over_title_font = self._get_menu_font(64)
         self.game_over_stat_font = self._get_menu_font(52)
         self.bg_surfaces = [self._load_bg(i) for i in [2, 5, 4, 3, 8, 1, 7, 6]]
-        # A háttérlista sorrendje adja a biome váltás vizuális ciklusát.
+        # Ez a sorrend mondja meg, milyen háttér jön egymás után.
         self.next_biome_idx = 0
         self.current_biome_idx = 0
         self.biome_counter = 1
@@ -249,9 +248,9 @@ class GameSetupMixin:
 
         self._end_prev_down = False
 
-    # Világ objektumok létrehozása
+    # Pálya és csoportok létrehozása
     def _init_objects(self) -> None:
-        # Létrehozza az út objektumot, játékost és sprite csoportokat.
+        # Létrehozzuk az utat, a játékos autót és a csoportokat.
         self.road = Road("Assets/road.png")
         self.player = Player(
             SCREEN_HEIGHT - 150, self.car_options[self.selected_car_idx]
@@ -264,9 +263,9 @@ class GameSetupMixin:
         self.bg2_surf = self.bg_surfaces[0]
         self.bg1_y, self.bg2_y = 0, -SCREEN_HEIGHT
 
-    # Asset és erőforrás betöltők
+    # Kép betöltő részek
     def _load_bg(self, index: int) -> pygame.Surface:
-        # Betölt egy háttérképet és a képernyő méretére igazítja.
+        # Betöltünk egy háttér képet és jó méretre tesszük.
         return pygame.transform.scale(
             pygame.image.load(f"Assets/backgrounds/{index}.jpg").convert(),
             (SCREEN_WIDTH, SCREEN_HEIGHT),
@@ -275,10 +274,10 @@ class GameSetupMixin:
     def _load_optional_image(
         self, path: str, size: tuple[int, int] | None = None
     ) -> pygame.Surface | None:
-        # Biztonságos képbetöltés: ha nincs fájl, nem áll le a játék.
-        # Ilyenkor None-t adunk vissza, és a hívó oldal eldönti a fallbacket.
+        # Képet töltünk be.
+        # Ha nincs meg a fájl, nem áll le a játék.
         try:
-            # Ha van alpha csatorna, tartsuk meg a tiszta átlátszó rétegekhez.
+            # Ha átlátszó részek vannak, azokat megtartjuk.
             raw_img = pygame.image.load(path)
             if raw_img.get_alpha() is not None:
                 img = raw_img.convert_alpha()
@@ -291,8 +290,8 @@ class GameSetupMixin:
             return None
 
     def _load_menu_font(self, size: int) -> pygame.font.Font:
-        # Több retro fontot próbál sorban.
-        # Ha egyik sem elérhető, jön egy biztosan létező rendszerfont.
+        # Több betűtípust próbálunk sorban.
+        # Ha egyik sincs, akkor egy alap betűtípust adunk.
         for font_name in [
             "Press Start 2P",
             "Pixel Emulator",
@@ -306,14 +305,14 @@ class GameSetupMixin:
         return pygame.font.SysFont("Courier New", size, bold=True)
 
     def _get_menu_font(self, size: int) -> pygame.font.Font:
-        # Font cache: ugyanazt a méretet nem töltjük be újra minden frame-ben.
+        # Ha már volt ilyen méret, újrahasználjuk.
         if size not in self.menu_fonts:
             self.menu_fonts[size] = self._load_menu_font(size)
         return self.menu_fonts[size]
 
-    # Audio segédfüggvények
+    # Hang segéd részek
     def _load_nitro_icon(self) -> pygame.Surface | None:
-        # Több lehetséges helyről próbál nitro ikont betölteni.
+        # Több helyen keresi a nitro ikont.
         for icon_path in ["Assets/nitro.png", "Assets/nitro/nitro.png", "nitro.png"]:
             try:
                 icon = pygame.image.load(icon_path).convert_alpha()
@@ -323,14 +322,14 @@ class GameSetupMixin:
         return None
 
     def _load_optional_sound(self, path: str) -> pygame.mixer.Sound | None:
-        # Hang betöltése biztonságosan.
+        # Hang fájl betöltése.
         try:
             return pygame.mixer.Sound(path)
         except (PG_ERROR, FileNotFoundError):
             return None
 
     def _apply_audio_state(self) -> None:
-        # A sound_on alapján állítja a zene és effekt hangerőt.
+        # Itt állítjuk be a zene és rövid hangok hangerejét.
         music_level = self.music_volume if self.sound_on else 0.0
         sfx_level = self.sfx_volume if self.sound_on else 0.0
 
@@ -344,12 +343,13 @@ class GameSetupMixin:
                 sfx.set_volume(sfx_level)
 
     def _play_sfx(self, sfx: pygame.mixer.Sound | None) -> None:
-        # Effekt lejátszása csak akkor, ha a hang be van kapcsolva.
+        # Rövid hang lejátszása, ha a hang be van kapcsolva.
         if self.sound_on and sfx is not None:
             sfx.play()
 
     def _toggle_sound(self) -> None:
-        # Hangkapcsoló: átbillenti az állapotot, majd azonnal frissíti a hangerőket.
+        # Hang ki/be kapcsolás.
+        # Utána rögtön frissítjük a hangerőket.
         self.sound_on = not self.sound_on
         self._apply_audio_state()
         if self.sound_on:
