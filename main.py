@@ -1,7 +1,5 @@
-import pygame
 from game import Game
-
-PG_INIT = getattr(pygame, "init", lambda: None)
+from settings import PG_INIT
 
 
 def main() -> None:

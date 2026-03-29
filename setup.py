@@ -1,9 +1,15 @@
 import random
 import pygame
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, LANE_POSITIONS
+from settings import (
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    FPS,
+    LANE_POSITIONS,
+    PG_DOUBLEBUF,
+    PG_ERROR,
+)
 from road import Road
 from player import Player
-from game_compat import PG_DOUBLEBUF, PG_ERROR
 
 
 class GameSetupMixin:
@@ -35,9 +41,8 @@ class GameSetupMixin:
         self.screen_state = "home"
         self.selected_car_idx = 0
 
-        flags = PG_DOUBLEBUF
         self.screen = pygame.display.set_mode(
-            (SCREEN_WIDTH, SCREEN_HEIGHT), flags, vsync=1
+            (SCREEN_WIDTH, SCREEN_HEIGHT), PG_DOUBLEBUF, vsync=1
         )
         pygame.display.set_caption("Highway Dodge")
         self.clock = pygame.time.Clock()
@@ -239,7 +244,6 @@ class GameSetupMixin:
         self.coins = pygame.sprite.Group()
         self.fuels = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
-
         self.bg1_surf = self.bg_surfaces[0]
         self.bg2_surf = self.bg_surfaces[0]
         self.bg1_y, self.bg2_y = 0, -SCREEN_HEIGHT
@@ -284,11 +288,7 @@ class GameSetupMixin:
         return self.menu_fonts[size]
 
     def _load_nitro_icon(self) -> pygame.Surface | None:
-        for icon_path in [
-            "Assets/nitro.png",
-            "Assets/nitro/nitro.png",
-            "nitro.png",
-        ]:
+        for icon_path in ["Assets/nitro.png", "Assets/nitro/nitro.png", "nitro.png"]:
             try:
                 icon = pygame.image.load(icon_path).convert_alpha()
                 return pygame.transform.smoothscale(icon, (54, 54))
