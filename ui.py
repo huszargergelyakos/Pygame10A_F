@@ -6,7 +6,13 @@ SRCALPHA = int(getattr(pygame, "SRCALPHA", 0))
 
 
 class GameUIMixin:
+    # Fő render folyamat
     def _draw(self) -> None:
+        # Ez a teljes kirajzolás központja: minden frame-ben ez fut le.
+        # Először megnézi, hogy melyik képernyő aktív (menü vagy játék).
+        # Ez azért fontos, mert mindig csak az adott képernyő elemeit kell rajzolni.
+        # A végén meghívjuk a display.update()-et, hogy látszódjon minden változás.
+        # A menü képernyők külön rajzolódnak, nem a játéktérrel együtt.
         if self.screen_state == "home":
             self._draw_home()
             pygame.display.update()
@@ -35,6 +41,7 @@ class GameUIMixin:
         self._draw_sound_button()
         pygame.display.update()
 
+    # Közös UI elemek
     def _draw_simple_button(
         self,
         rect: pygame.Rect,
@@ -45,6 +52,9 @@ class GameUIMixin:
         fill_hover: tuple[int, int, int, int] = (34, 34, 40, 228),
         border: tuple[int, int, int] = (242, 242, 242),
     ) -> None:
+        # Ez egy általános gombrajzoló, hogy ne kelljen minden gombot külön megírni.
+        # Ha az egér rajta van a gombon, erősebb (hover) hátteret kap.
+        # A felirat mindig a gomb közepére kerül.
         bg = fill_hover if hovered else fill_base
         self._draw_box(rect, bg, border, radius=12)
         text = self._get_menu_font(text_size).render(label, True, WHITE)
@@ -57,6 +67,8 @@ class GameUIMixin:
         border: tuple[int, int, int],
         radius: int = 12,
     ) -> None:
+        # Lekerekített panelt rajzol árnyékkal.
+        # Az árnyék segít, hogy a doboz jobban elkülönüljön a háttértől.
         shadow = pygame.Surface((rect.width + 10, rect.height + 10), SRCALPHA)
         pygame.draw.rect(
             shadow,
@@ -68,13 +80,17 @@ class GameUIMixin:
         pygame.draw.rect(self.screen, fill, rect, border_radius=radius)
         pygame.draw.rect(self.screen, border, rect, 2, border_radius=radius)
 
+    # Kezdő és autó választó képernyők
     def _draw_home(self) -> None:
+        # A főmenü teljes kirajzolása itt történik.
+        # Ebben a függvényben nem csak rajzolunk, hanem a kattintásokat is kezeljük.
         if self.home_bg:
             self.screen.blit(self.home_bg, (0, 0))
         else:
             self.screen.fill((22, 20, 40))
 
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
+        # Finom sötét réteg a jobb olvashatóságért.
         overlay.fill((0, 0, 0, 70))
         self.screen.blit(overlay, (0, 0))
 
@@ -86,6 +102,7 @@ class GameUIMixin:
         self.screen.blit(title, title.get_rect(center=title_box.center))
 
         mouse_pressed = pygame.mouse.get_pressed()[0] == 1
+        # click_started csak a lenyomás pillanatában igaz (nem minden frame-ben).
         click_started = mouse_pressed and not self._mouse_prev_down
         mouse_pos = pygame.mouse.get_pos()
 
@@ -137,6 +154,8 @@ class GameUIMixin:
         self._mouse_prev_down = mouse_pressed
 
     def _draw_select_car(self) -> None:
+        # Az autóválasztó képernyő logikája.
+        # Látszik az aktuális autó nagyban, a nyilakkal pedig lehet váltani.
         if self.home_bg:
             self.screen.blit(self.home_bg, (0, 0))
         else:
@@ -154,6 +173,7 @@ class GameUIMixin:
         self.screen.blit(title, title.get_rect(center=title_box.center))
 
         preview = self.car_preview_surfaces[self.selected_car_idx]
+        # Az aktuálisan kiválasztott autó nagy preview-ban jelenik meg.
         preview_rect = preview.get_rect(
             center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 10)
         )
@@ -175,6 +195,7 @@ class GameUIMixin:
         if self.arrow_left_img:
             self.screen.blit(self.arrow_left_img, self.arrow_left_rect)
             if click_started and self.arrow_left_rect.collidepoint(mouse_pos):
+                # Körbeforgó indexelés: 0 elé lépve az utolsó autó jön.
                 self.selected_car_idx = (self.selected_car_idx - 1) % len(
                     self.car_options
                 )
@@ -182,6 +203,7 @@ class GameUIMixin:
         if self.arrow_right_img:
             self.screen.blit(self.arrow_right_img, self.arrow_right_rect)
             if click_started and self.arrow_right_rect.collidepoint(mouse_pos):
+                # Körbeforgó indexelés jobbra.
                 self.selected_car_idx = (self.selected_car_idx + 1) % len(
                     self.car_options
                 )
@@ -214,7 +236,10 @@ class GameUIMixin:
 
         self._mouse_prev_down = mouse_pressed
 
+    # Pause réteg
     def _draw_pause_menu_button(self) -> None:
+        # A jobb felső kis pause/menu gomb kirajzolása.
+        # Ugyanaz a gomb mutat pause vagy play ikont az aktuális állapottól függően.
         rect = self.pause_menu_btn_rect
         mouse_pos = pygame.mouse.get_pos()
         hovered = rect.collidepoint(mouse_pos)
@@ -251,6 +276,8 @@ class GameUIMixin:
         self.screen.blit(menu_text, text_rect)
 
     def _draw_pause_overlay(self) -> None:
+        # A szünet menü (overlay) kirajzolása.
+        # Itt látszanak az újrakezdés, főmenü, hang és visszatérés gombok.
         self._draw_box(
             self.pause_panel_rect, (16, 16, 18, 220), (210, 210, 210), radius=18
         )
@@ -283,12 +310,15 @@ class GameUIMixin:
             text_size=46,
         )
 
+    # Kisegítő függvény a pause panel ikon gombjaihoz.
     def _draw_pause_icon_button(
         self,
         rect: pygame.Rect,
         icon: pygame.Surface | None,
         fallback_label: str,
     ) -> None:
+        # Ikonos gomb rajzolása a pause panelen.
+        # Ha nincs kép, akkor tartalékként egy betűt rajzolunk a gomb közepére.
         mouse_pos = pygame.mouse.get_pos()
         hovered = rect.collidepoint(mouse_pos)
 
@@ -306,12 +336,17 @@ class GameUIMixin:
         label = self._get_menu_font(34).render(fallback_label, True, WHITE)
         self.screen.blit(label, label.get_rect(center=rect.center))
 
+    # Game over nézet és végi gombok
     def _active_sound_button_rect(self) -> pygame.Rect | None:
+        # Megmondja, melyik hang gomb legyen aktív az aktuális képernyőn.
+        # Most a game over képernyőn használjuk.
         if self.game_over:
             return self.sound_btn_end_rect
         return None
 
     def _draw_sound_button(self) -> None:
+        # Hang gomb rajzolása.
+        # Ha van ikon, azt rajzoljuk. Ha nincs, egy egyszerű tartalék gomb jelenik meg.
         btn_rect = self._active_sound_button_rect()
         if btn_rect is None:
             return
@@ -329,23 +364,33 @@ class GameUIMixin:
         self.screen.blit(label, label.get_rect(center=btn_rect.center))
 
     def _draw_game_over(self) -> None:
+        # Game over képernyő kirajzolása.
+        # Ebben benne van: háttér, sötét overlay, cím, statisztika panel és alsó gombok.
+        # Kezdőként ezt úgy érdemes olvasni, hogy fentről lefelé építjük fel a képet.
         if self.game_over_main_bg:
+            # 1) Ha van külön game over háttérkép, kirajzoljuk teljes képernyőre.
             self.screen.blit(self.game_over_main_bg, (0, 0))
 
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), SRCALPHA)
+        # 2) Erre jön egy félig átlátszó fekete réteg, hogy a fehér szöveg jobban látszódjon.
         overlay.fill((0, 0, 0, 95))
         self.screen.blit(overlay, (0, 0))
 
         if self.game_over_logo:
+            # 3) Ha létezik logó kép, azt használjuk címnek.
             logo_rect = self.game_over_logo.get_rect(center=(SCREEN_WIDTH // 2, 150))
             self.screen.blit(self.game_over_logo, logo_rect)
         else:
+            # 4) Ha nincs logó kép, akkor szöveges címet írunk ki.
             title = self.game_over_title_font.render("GAME OVER", True, (255, 80, 80))
             self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 150)))
 
+        # A statisztika sorok elkészítése.
+        # Fontos: előbb kirendereljük a szöveget, utána tudjuk pontosan a panel méretét.
         stat_font = pygame.font.SysFont("Segoe UI", 38, bold=True)
         line_gap = 58
         start_y = 380
+        # 5) Ez a lista mondja meg, milyen sorrendben jelenjenek meg az adatok.
         lines = [
             f"Coins: {self.score}",
             f"Cars Dodged: {self.cars_dodged}",
@@ -353,25 +398,32 @@ class GameUIMixin:
             f"Biome: {self.biome_counter}",
             f"Distance: {self.distance_meters / 1000.0:.2f} km",
         ]
+        # 6) A sima szövegekből képet (surface-t) csinálunk, hogy ki tudjuk rajzolni őket.
         line_surfs = [stat_font.render(line, True, WHITE) for line in lines]
+        # A panel mérete a leghosszabb sorhoz igazodik, ezért nem lóg ki semmi.
 
+        # 7) Megkeressük az első és utolsó sor helyét, ebből jön a panel magassága.
         first_rect = line_surfs[0].get_rect(center=(SCREEN_WIDTH // 2, start_y))
         last_center_y = start_y + (line_gap * (len(line_surfs) - 1))
         last_rect = line_surfs[-1].get_rect(center=(SCREEN_WIDTH // 2, last_center_y))
 
+        # 8) A panel szélességét a leghosszabb sorhoz igazítjuk egy kis ráhagyással.
         stats_width = line_surfs[-1].get_width() + 36
         stats_height = last_rect.bottom - first_rect.top
         stats_box = pygame.Rect(0, 0, stats_width, stats_height)
         stats_box.centerx = SCREEN_WIDTH // 2
         stats_box.top = first_rect.top
+        # 9) Maga a háttérpanel kirajzolása (áttetsző fekete + világos keret).
         self._draw_box(stats_box, (0, 0, 0, 80), (230, 230, 230), radius=14)
 
+        # 10) Soronként kirajzoljuk a stat szöveget a panel tetejétől lefelé.
         for idx, surf in enumerate(line_surfs):
             self.screen.blit(
                 surf,
                 surf.get_rect(center=(SCREEN_WIDTH // 2, start_y + idx * line_gap)),
             )
 
+        # 11) Kattintáskezelés az alsó gombokhoz (home/replay).
         mouse_pressed = pygame.mouse.get_pressed()[0] == 1
         click_started = mouse_pressed and not self._end_prev_down
         mouse_pos = pygame.mouse.get_pos()
@@ -386,27 +438,38 @@ class GameUIMixin:
         else:
             pygame.draw.rect(self.screen, WHITE, self.replay_btn_end_rect, 2)
 
+        # 12) Replay: új kör indul. Home: vissza a főmenübe.
         if click_started and self.replay_btn_end_rect.collidepoint(mouse_pos):
             self._reset_run()
         if click_started and self.home_btn_end_rect.collidepoint(mouse_pos):
             self._go_to_home()
 
+        # 13) Elmentjük az előző egérállapotot, hogy ne számoljuk többször ugyanazt a kattintást.
         self._end_prev_down = mouse_pressed
 
+    # Állapotváltások
     def _reset_run(self) -> None:
+        # Teljes futás újraindítása.
+        # Újraépítjük a változókat és az objektumokat, majd játék módra váltunk.
         self._init_variables()
         self._init_objects()
         self.screen_state = "playing"
 
     def _start_game_from_home(self) -> None:
+        # A menüből indított játék ugyanazt a reset logikát használja.
         self._reset_run()
 
     def _go_to_home(self) -> None:
+        # Visszalépés a főmenübe.
+        # Itt is teljes reset történik, hogy tiszta állapotból induljon a következő kör.
         self._init_variables()
         self._init_objects()
         self.screen_state = "home"
 
+    # Játék közbeni HUD
     def _draw_hud(self) -> None:
+        # Játék közbeni információs felület (HUD).
+        # Bal felül stat sorok, jobb alul kör alakú nitro kijelző.
         hud_rect = pygame.Rect(12, 18, 188, 138)
         hud_panel = pygame.Surface((hud_rect.width, hud_rect.height), SRCALPHA)
         pygame.draw.rect(
@@ -431,6 +494,7 @@ class GameUIMixin:
             f"Time: {self.elapsed_time}s",
             f"Biome: {self.biome_counter}",
         ]
+        # A stat sorok fix függőleges ritmussal kerülnek egymás alá.
         for i, text in enumerate(stats):
             self.screen.blit(
                 hud_font.render(text, True, WHITE),
@@ -451,6 +515,7 @@ class GameUIMixin:
         pygame.draw.circle(self.screen, border_color, center, radius, 3)
         pygame.draw.circle(self.screen, track_color, center, radius, 8)
         fill_ratio = self.nitro_gas / 100.0
+        # A nitro százalék arányosan határozza meg az ív hosszát.
         start_angle = -math.pi / 2
         end_angle = start_angle + (2 * math.pi * fill_ratio)
         pygame.draw.arc(
