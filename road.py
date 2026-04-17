@@ -30,6 +30,7 @@ class Road:
             self.y2 = self.y1 - SCREEN_HEIGHT
 
     def draw(self, screen: pygame.Surface) -> None:
-        # Kirajzoljuk mindkét út képet.
+        # Rarajzoljuk mindkét út képet a játék ablakára a kiszámolt pozíciókra.
+        # A ROAD_X garantálja, hogy középen legyen, az y1 és y2 pedig a függőleges mozgást adja.
         screen.blit(self.image, (ROAD_X, self.y1))
         screen.blit(self.image, (ROAD_X, self.y2))

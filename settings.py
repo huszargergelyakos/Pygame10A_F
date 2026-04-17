@@ -1,7 +1,7 @@
 import pygame
 from typing import Any
 
-# A játék ablak méretei.
+# A játékablak szélessége és magassága képpontokban.
 # FPS azt mondja meg, másodpercenként kb. hányszor frissül a kép.
 SCREEN_WIDTH = 950
 SCREEN_HEIGHT = 1000
@@ -17,7 +17,7 @@ ROAD_WIDTH = 550
 ROAD_X = (SCREEN_WIDTH - ROAD_WIDTH) // 2
 
 # Az autósávok közepének x értékei.
-# A játékos és a többi autó ezekhez a pontokhoz igazodik.
+# A játékos és az ellenséges autó ezekhez a pontokhoz igazodik.
 LANE_POSITIONS = [ROAD_X + 100, ROAD_X + 212, ROAD_X + 325, ROAD_X + 435]
 
 # Ennyi méter után jön a következő háttér.

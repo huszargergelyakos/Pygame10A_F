@@ -4,13 +4,10 @@ from settings import LANE_POSITIONS
 
 # Ez a játékos autója.
 class Player(pygame.sprite.Sprite):
-    # Az autó sávok között mozog.
-    # Nem ugrik azonnal, hanem szépen odacsúszik.
 
     def __init__(self, y: int, image_path: str) -> None:
         super().__init__()
-        # Betöltjük az autó képét.
-        # Beállítjuk a méretét.
+        # Betöltjük és átméretezzük a játékos által választott autót
         img = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(img, (112, 210))
         self.rect = self.image.get_rect()
